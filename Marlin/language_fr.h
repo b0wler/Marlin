@@ -106,6 +106,7 @@
 #define MSG_UBL_VALIDATE_MESH_MENU          _UxGT("Valider maille")
 #define MSG_UBL_VALIDATE_PLA_MESH           _UxGT("Valider maille PLA")
 #define MSG_UBL_VALIDATE_ABS_MESH           _UxGT("Valider maille ABS")
+#define MSG_UBL_VALIDATE_PET_MESH           _UxGT("Valider maille PET")
 #define MSG_UBL_VALIDATE_CUSTOM_MESH        _UxGT("Valider maille perso")
 #define MSG_UBL_CONTINUE_MESH               _UxGT("Continuer maille")
 #define MSG_UBL_MESH_LEVELING               _UxGT("Niveau par maille")

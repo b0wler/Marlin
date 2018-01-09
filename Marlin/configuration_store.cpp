@@ -36,7 +36,7 @@
  *
  */
 
-#define EEPROM_VERSION "V41"
+#define EEPROM_VERSION "V42"
 
 // Change EEPROM version if these are changed:
 #define EEPROM_OFFSET 100
@@ -106,64 +106,64 @@
  *  348  M666 Z    z_endstop_adj                    (float)
  *  ---            dummy data                       (float x11)
  *
- * ULTIPANEL:                                       6 bytes
- *  396  M145 S0 H lcd_preheat_hotend_temp          (int x2)
- *  400  M145 S0 B lcd_preheat_bed_temp             (int x2)
- *  404  M145 S0 F lcd_preheat_fan_speed            (int x2)
+ * ULTIPANEL:                                       9 bytes
+ *  396  M145 S0 H lcd_preheat_hotend_temp          (int x3)
+ *  400  M145 S0 B lcd_preheat_bed_temp             (int x3)
+ *  404  M145 S0 F lcd_preheat_fan_speed            (int x3)
  *
  * PIDTEMP:                                         66 bytes
- *  408  M301 E0 PIDC  Kp[0], Ki[0], Kd[0], Kc[0]   (float x4)
- *  424  M301 E1 PIDC  Kp[1], Ki[1], Kd[1], Kc[1]   (float x4)
- *  440  M301 E2 PIDC  Kp[2], Ki[2], Kd[2], Kc[2]   (float x4)
- *  456  M301 E3 PIDC  Kp[3], Ki[3], Kd[3], Kc[3]   (float x4)
- *  472  M301 E4 PIDC  Kp[3], Ki[3], Kd[3], Kc[3]   (float x4)
- *  488  M301 L        lpq_len                      (int)
+ *  412  M301 E0 PIDC  Kp[0], Ki[0], Kd[0], Kc[0]   (float x4)
+ *  428  M301 E1 PIDC  Kp[1], Ki[1], Kd[1], Kc[1]   (float x4)
+ *  444  M301 E2 PIDC  Kp[2], Ki[2], Kd[2], Kc[2]   (float x4)
+ *  460  M301 E3 PIDC  Kp[3], Ki[3], Kd[3], Kc[3]   (float x4)
+ *  476  M301 E4 PIDC  Kp[3], Ki[3], Kd[3], Kc[3]   (float x4)
+ *  492  M301 L        lpq_len                      (int)
  *
  * PIDTEMPBED:                                      12 bytes
- *  490  M304 PID  thermalManager.bedKp, .bedKi, .bedKd (float x3)
+ *  496  M304 PID  thermalManager.bedKp, .bedKi, .bedKd (float x3)
  *
  * DOGLCD:                                          2 bytes
- *  502  M250 C    lcd_contrast                     (uint16_t)
+ *  506  M250 C    lcd_contrast                     (uint16_t)
  *
  * FWRETRACT:                                       33 bytes
- *  504  M209 S    autoretract_enabled              (bool)
- *  505  M207 S    retract_length                   (float)
- *  509  M207 F    retract_feedrate_mm_s            (float)
- *  513  M207 Z    retract_zlift                    (float)
- *  517  M208 S    retract_recover_length           (float)
- *  521  M208 F    retract_recover_feedrate_mm_s    (float)
- *  525  M207 W    swap_retract_length              (float)
- *  529  M208 W    swap_retract_recover_length      (float)
- *  533  M208 R    swap_retract_recover_feedrate_mm_s (float)
+ *  508  M209 S    autoretract_enabled              (bool)
+ *  509  M207 S    retract_length                   (float)
+ *  513  M207 F    retract_feedrate_mm_s            (float)
+ *  517  M207 Z    retract_zlift                    (float)
+ *  521  M208 S    retract_recover_length           (float)
+ *  525  M208 F    retract_recover_feedrate_mm_s    (float)
+ *  529  M207 W    swap_retract_length              (float)
+ *  533  M208 W    swap_retract_recover_length      (float)
+ *  537  M208 R    swap_retract_recover_feedrate_mm_s (float)
  *
  * Volumetric Extrusion:                            21 bytes
- *  537  M200 D    volumetric_enabled               (bool)
- *  538  M200 T D  filament_size                    (float x5) (T0..3)
+ *  541  M200 D    volumetric_enabled               (bool)
+ *  542  M200 T D  filament_size                    (float x5) (T0..3)
  *
  * HAVE_TMC2130:                                    20 bytes
- *  558  M906 X    Stepper X current                (uint16_t)
- *  560  M906 Y    Stepper Y current                (uint16_t)
- *  562  M906 Z    Stepper Z current                (uint16_t)
- *  564  M906 X2   Stepper X2 current               (uint16_t)
- *  566  M906 Y2   Stepper Y2 current               (uint16_t)
- *  568  M906 Z2   Stepper Z2 current               (uint16_t)
- *  570  M906 E0   Stepper E0 current               (uint16_t)
- *  572  M906 E1   Stepper E1 current               (uint16_t)
- *  574  M906 E2   Stepper E2 current               (uint16_t)
- *  576  M906 E3   Stepper E3 current               (uint16_t)
- *  580  M906 E4   Stepper E4 current               (uint16_t)
+ *  562  M906 X    Stepper X current                (uint16_t)
+ *  564  M906 Y    Stepper Y current                (uint16_t)
+ *  566  M906 Z    Stepper Z current                (uint16_t)
+ *  568  M906 X2   Stepper X2 current               (uint16_t)
+ *  570  M906 Y2   Stepper Y2 current               (uint16_t)
+ *  572  M906 Z2   Stepper Z2 current               (uint16_t)
+ *  574  M906 E0   Stepper E0 current               (uint16_t)
+ *  576  M906 E1   Stepper E1 current               (uint16_t)
+ *  578  M906 E2   Stepper E2 current               (uint16_t)
+ *  580  M906 E3   Stepper E3 current               (uint16_t)
+ *  584  M906 E4   Stepper E4 current               (uint16_t)
  *
  * LIN_ADVANCE:                                     8 bytes
- *  584  M900 K    extruder_advance_k               (float)
- *  588  M900 WHD  advance_ed_ratio                 (float)
+ *  588  M900 K    extruder_advance_k               (float)
+ *  592  M900 WHD  advance_ed_ratio                 (float)
  *
  * HAS_MOTOR_CURRENT_PWM:
- *  592  M907 X    Stepper XY current               (uint32_t)
- *  596  M907 Z    Stepper Z current                (uint32_t)
- *  600  M907 E    Stepper E current                (uint32_t)
+ *  596  M907 X    Stepper XY current               (uint32_t)
+ *  600  M907 Z    Stepper Z current                (uint32_t)
+ *  604  M907 E    Stepper E current                (uint32_t)
  *
- *  604                                Minimum end-point
- * 1925 (604 + 36 + 9 + 288 + 988)     Maximum end-point
+ *  608                                Minimum end-point
+ * 1925 (608 + 36 + 9 + 288 + 984)     Maximum end-point
  *
  * ========================================================================
  * meshes_begin (between max and min end-point, directly above)
@@ -468,9 +468,9 @@ void MarlinSettings::postprocess() {
     #endif
 
     #if DISABLED(ULTIPANEL)
-      constexpr int lcd_preheat_hotend_temp[2] = { PREHEAT_1_TEMP_HOTEND, PREHEAT_2_TEMP_HOTEND },
-                    lcd_preheat_bed_temp[2] = { PREHEAT_1_TEMP_BED, PREHEAT_2_TEMP_BED },
-                    lcd_preheat_fan_speed[2] = { PREHEAT_1_FAN_SPEED, PREHEAT_2_FAN_SPEED };
+      constexpr int lcd_preheat_hotend_temp[3] = { PREHEAT_1_TEMP_HOTEND, PREHEAT_2_TEMP_HOTEND PREHEAT_3_TEMP_HOTEND },
+                    lcd_preheat_bed_temp[3] = { PREHEAT_1_TEMP_BED, PREHEAT_2_TEMP_BED, PREHEAT_3_TEMP_BED },
+                    lcd_preheat_fan_speed[3] = { PREHEAT_1_FAN_SPEED, PREHEAT_2_FAN_SPEED, PREHEAT_3_FAN_SPEED };
     #endif
 
     EEPROM_WRITE(lcd_preheat_hotend_temp);
@@ -857,7 +857,7 @@ void MarlinSettings::postprocess() {
       #endif
 
       #if DISABLED(ULTIPANEL)
-        int lcd_preheat_hotend_temp[2], lcd_preheat_bed_temp[2], lcd_preheat_fan_speed[2];
+        int lcd_preheat_hotend_temp[3], lcd_preheat_bed_temp[3], lcd_preheat_fan_speed[3];
       #endif
 
       EEPROM_READ(lcd_preheat_hotend_temp);
@@ -1251,10 +1251,13 @@ void MarlinSettings::reset() {
   #if ENABLED(ULTIPANEL)
     lcd_preheat_hotend_temp[0] = PREHEAT_1_TEMP_HOTEND;
     lcd_preheat_hotend_temp[1] = PREHEAT_2_TEMP_HOTEND;
+    lcd_preheat_hotend_temp[2] = PREHEAT_3_TEMP_HOTEND;
     lcd_preheat_bed_temp[0] = PREHEAT_1_TEMP_BED;
     lcd_preheat_bed_temp[1] = PREHEAT_2_TEMP_BED;
+    lcd_preheat_bed_temp[2] = PREHEAT_3_TEMP_BED;
     lcd_preheat_fan_speed[0] = PREHEAT_1_FAN_SPEED;
     lcd_preheat_fan_speed[1] = PREHEAT_2_FAN_SPEED;
+    lcd_preheat_fan_speed[3] = PREHEAT_3_FAN_SPEED;
   #endif
 
   #if HAS_LCD_CONTRAST

@@ -30,7 +30,7 @@ extern "C" {
 #include "HAL_timers.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include "include/arduino.h"
+#include <Arduino.h>
 #include "serial.h"
 #include "LPC1768_PWM.h"
 
@@ -70,6 +70,20 @@ extern "C" void SystemPostInit() {
   }
 }
 
+// detect 17x[4-8] (100MHz) or 17x9 (120MHz)
+static bool isLPC1769() {
+    #define IAP_LOCATION 0x1FFF1FF1
+    uint32_t command[1];
+    uint32_t result[5];
+    typedef void (*IAP)(uint32_t*, uint32_t*);
+    IAP iap = (IAP) IAP_LOCATION;
+
+    command[0] = 54;
+    iap(command, result);
+
+    return ((result[1] & 0x00100000) != 0);
+}
+
 extern uint32_t MSC_SD_Init(uint8_t pdrv);
 
 int main(void) {
@@ -88,14 +102,13 @@ int main(void) {
     #endif
   }
 
-  // Only initialize the debug framework if using the USB emulated serial port
-  if ((HalSerial*) &MYSERIAL == &usb_serial)
-    debug_frmwrk_init();
-
-  MYSERIAL.begin(BAUDRATE);
-  MYSERIAL.printf("\n\nLPC1768 (%dMhz) UART0 Initialised\n", SystemCoreClock / 1000000);
-  #if TX_BUFFER_SIZE > 0
-    MYSERIAL.flushTX();
+  #if NUM_SERIAL > 0
+    MYSERIAL0.begin(BAUDRATE);
+    #if NUM_SERIAL > 1
+      MYSERIAL1.begin(BAUDRATE);
+    #endif
+    SERIAL_PRINTF("\n\n%s (%dMhz) UART0 Initialised\n", isLPC1769() ? "LPC1769" : "LPC1768", SystemCoreClock / 1000000);
+    SERIAL_FLUSHTX();
   #endif
 
   HAL_timer_init();
@@ -103,9 +116,7 @@ int main(void) {
   LPC1768_PWM_init();
 
   setup();
-  while (true) {
-    loop();
-  }
+  for (;;) loop();
 }
 
 #endif // TARGET_LPC1768

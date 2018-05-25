@@ -60,44 +60,43 @@
 #include "../module/planner.h"
 #include "../module/stepper.h"
 #include "../Marlin.h"
+#include "../HAL/Delay.h"
 
 static uint8_t LEDs[8] = { 0 };
 
 #ifdef CPU_32_BIT
-  #define MS_DELAY() delayMicroseconds(5)  // 32-bit processors need a delay to stabilize the signal
+  // Approximate a 1µs delay on 32-bit ARM
+  #define SIG_DELAY() DELAY_US(1)
 #else
-  #define MS_DELAY() NOOP
+  // Delay for 0.1875µs (16MHz AVR) or 0.15µs (20MHz AVR)
+  #define SIG_DELAY() DELAY_NS(188)
 #endif
 
 void Max7219_PutByte(uint8_t data) {
-  CRITICAL_SECTION_START
   for (uint8_t i = 8; i--;) {
-    MS_DELAY();
+    SIG_DELAY();
     WRITE(MAX7219_CLK_PIN, LOW);       // tick
-    MS_DELAY();
+    SIG_DELAY();
     WRITE(MAX7219_DIN_PIN, (data & 0x80) ? HIGH : LOW);  // send 1 or 0 based on data bit
-    MS_DELAY();
+    SIG_DELAY();
     WRITE(MAX7219_CLK_PIN, HIGH);      // tock
-    MS_DELAY();
+    SIG_DELAY();
     data <<= 1;
   }
-  CRITICAL_SECTION_END
 }
 
 void Max7219(const uint8_t reg, const uint8_t data) {
-  MS_DELAY();
-  CRITICAL_SECTION_START
+  SIG_DELAY();
   WRITE(MAX7219_LOAD_PIN, LOW);  // begin
-  MS_DELAY();
+  SIG_DELAY();
   Max7219_PutByte(reg);          // specify register
-  MS_DELAY();
+  SIG_DELAY();
   Max7219_PutByte(data);         // put data
-  MS_DELAY();
+  SIG_DELAY();
   WRITE(MAX7219_LOAD_PIN, LOW);  // and tell the chip to load the data
-  MS_DELAY();
+  SIG_DELAY();
   WRITE(MAX7219_LOAD_PIN, HIGH);
-  CRITICAL_SECTION_END
-  MS_DELAY();
+  SIG_DELAY();
 }
 
 void Max7219_LED_Set(const uint8_t col, const uint8_t row, const bool on) {
@@ -107,9 +106,9 @@ void Max7219_LED_Set(const uint8_t col, const uint8_t row, const bool on) {
     SERIAL_ECHOLNPGM(")");
     return;
   }
-  if (TEST(LEDs[row], col) == on) return; // if LED is already on/off, leave alone
-  if (on) SBI(LEDs[row], col); else CBI(LEDs[row], col);
-  Max7219(8 - row, LEDs[row]);
+  if (TEST(LEDs[col], row) == on) return; // if LED is already on/off, leave alone
+  if (on) SBI(LEDs[col], row); else CBI(LEDs[col], row);
+  Max7219(8 - col, LEDs[col]);
 }
 
 void Max7219_LED_On(const uint8_t col, const uint8_t row) {
@@ -214,6 +213,16 @@ void Max7219_Set_Column(const uint8_t col, const uint8_t val) {
   Max7219(8 - col, LEDs[col]);
 }
 
+void Max7219_register_setup() {
+  //initiation of the max 7219
+  Max7219(max7219_reg_scanLimit, 0x07);
+  Max7219(max7219_reg_decodeMode, 0x00);       // using an led matrix (not digits)
+  Max7219(max7219_reg_shutdown, 0x01);         // not in shutdown mode
+  Max7219(max7219_reg_displayTest, 0x00);      // no display test
+  Max7219(max7219_reg_intensity, 0x01 & 0x0F); // the first 0x0F is the value you can set
+                                               // range: 0x00 to 0x0F
+}
+
 void Max7219_init() {
   uint8_t i, x, y;
 
@@ -223,13 +232,8 @@ void Max7219_init() {
   OUT_WRITE(MAX7219_LOAD_PIN, HIGH);
   delay(1);
 
-  //initiation of the max 7219
-  Max7219(max7219_reg_scanLimit, 0x07);
-  Max7219(max7219_reg_decodeMode, 0x00);  // using an led matrix (not digits)
-  Max7219(max7219_reg_shutdown, 0x01);    // not in shutdown mode
-  Max7219(max7219_reg_displayTest, 0x00); // no display test
-  Max7219(max7219_reg_intensity, 0x01 & 0x0F); // the first 0x0F is the value you can set
-                                               // range: 0x00 to 0x0F
+  Max7219_register_setup();
+
   for (i = 0; i <= 7; i++) {      // empty registers, turn all LEDs off
     LEDs[i] = 0x00;
     Max7219(i + 1, 0);
@@ -237,13 +241,13 @@ void Max7219_init() {
 
   for (x = 0; x <= 7; x++)        // Do an aesthetically pleasing pattern to fully test
     for (y = 0; y <= 7; y++) {    // the Max7219 module and LEDs. First, turn them
-      Max7219_LED_On(x, y);       // all on.
+      Max7219_LED_On(y, x);       // all on.
       delay(3);
     }
 
   for (x = 0; x <= 7; x++)        // Now, turn them all off.
     for (y = 0; y <= 7; y++) {
-      Max7219_LED_Off(x, y);
+      Max7219_LED_Off(y, x);
       delay(3);                   // delay() is OK here. Max7219_init() is only called from
     }                             // setup() and nothing is running yet.
 
@@ -251,13 +255,13 @@ void Max7219_init() {
 
   for (x = 8; x--;)               // Now, do the same thing from the opposite direction
     for (y = 0; y <= 7; y++) {
-      Max7219_LED_On(x, y);
+      Max7219_LED_On(y, x);
       delay(2);
     }
 
   for (x = 8; x--;)
     for (y = 0; y <= 7; y++) {
-      Max7219_LED_Off(x, y);
+      Max7219_LED_Off(y, x);
       delay(2);
     }
 }
@@ -273,15 +277,22 @@ void Max7219_init() {
  */
 void Max7219_idle_tasks() {
   #if MAX7219_DEBUG_STEPPER_HEAD || MAX7219_DEBUG_STEPPER_TAIL || MAX7219_DEBUG_STEPPER_QUEUE
-    CRITICAL_SECTION_START
+    CRITICAL_SECTION_START;
     #if MAX7219_DEBUG_STEPPER_HEAD || MAX7219_DEBUG_STEPPER_QUEUE
       const uint8_t head = planner.block_buffer_head;
     #endif
     #if MAX7219_DEBUG_STEPPER_TAIL || MAX7219_DEBUG_STEPPER_QUEUE
       const uint8_t tail = planner.block_buffer_tail;
     #endif
-    CRITICAL_SECTION_END
+    CRITICAL_SECTION_END;
   #endif
+
+  static uint16_t refresh_cnt = 0;  // The Max7219 circuit boards available for several dollars on eBay
+  if (refresh_cnt++ > 50000) {      // are vulnerable to electrical noise, especially with long wires
+    Max7219_register_setup();       // next to high current wires. If the display becomes corrupted due
+    Max7219_LED_Toggle(7, 0);       // to electrical noise, this will fix it within a couple of seconds.
+    refresh_cnt = 0;
+  }
 
   #if ENABLED(MAX7219_DEBUG_PRINTER_ALIVE)
     static millis_t next_blink = 0;
@@ -295,15 +306,15 @@ void Max7219_idle_tasks() {
     static int16_t last_head_cnt = 0;
     if (last_head_cnt != head) {
       if (last_head_cnt < 8)
-        Max7219_LED_Off(last_head_cnt, MAX7219_DEBUG_STEPPER_HEAD);
+        Max7219_LED_Off(MAX7219_DEBUG_STEPPER_HEAD, last_head_cnt);
       else
-        Max7219_LED_Off(last_head_cnt - 8, MAX7219_DEBUG_STEPPER_HEAD + 1);
+        Max7219_LED_Off(MAX7219_DEBUG_STEPPER_HEAD + 1, last_head_cnt - 8);
 
       last_head_cnt = head;
       if (head < 8)
-        Max7219_LED_On(head, MAX7219_DEBUG_STEPPER_HEAD);
+        Max7219_LED_On(MAX7219_DEBUG_STEPPER_HEAD, head);
       else
-        Max7219_LED_On(head - 8, MAX7219_DEBUG_STEPPER_HEAD + 1);
+        Max7219_LED_On(MAX7219_DEBUG_STEPPER_HEAD + 1, head - 8);
     }
   #endif
 
@@ -311,15 +322,15 @@ void Max7219_idle_tasks() {
     static int16_t last_tail_cnt = 0;
     if (last_tail_cnt != tail) {
       if (last_tail_cnt < 8)
-        Max7219_LED_Off(last_tail_cnt, MAX7219_DEBUG_STEPPER_TAIL);
+        Max7219_LED_Off(MAX7219_DEBUG_STEPPER_TAIL, last_tail_cnt);
       else
-        Max7219_LED_Off(last_tail_cnt - 8, MAX7219_DEBUG_STEPPER_TAIL + 1);
+        Max7219_LED_Off(MAX7219_DEBUG_STEPPER_TAIL + 1, last_tail_cnt - 8);
 
       last_tail_cnt = tail;
       if (tail < 8)
-        Max7219_LED_On(tail, MAX7219_DEBUG_STEPPER_TAIL);
+        Max7219_LED_On(MAX7219_DEBUG_STEPPER_TAIL, tail);
       else
-        Max7219_LED_On(tail - 8, MAX7219_DEBUG_STEPPER_TAIL + 1);
+        Max7219_LED_On(MAX7219_DEBUG_STEPPER_TAIL + 1, tail - 8);
     }
   #endif
 
@@ -332,14 +343,14 @@ void Max7219_idle_tasks() {
       NOMORE(current_depth, 16);        // if the BLOCK_BUFFER_SIZE is greater than 16, two lines
                                         // of LEDs is enough to see if the buffer is draining
 
-      const uint8_t st = min(current_depth, last_depth),
-                    en = max(current_depth, last_depth);
+      const uint8_t st = MIN(current_depth, last_depth),
+                    en = MAX(current_depth, last_depth);
       if (current_depth < last_depth)
         for (uint8_t i = st; i <= en; i++)   // clear the highest order LEDs
-          Max7219_LED_Off(i / 2, MAX7219_DEBUG_STEPPER_QUEUE + (i & 1));
+          Max7219_LED_Off(MAX7219_DEBUG_STEPPER_QUEUE + (i & 1), i / 2);
       else
         for (uint8_t i = st; i <= en; i++)   // set the LEDs to current depth
-          Max7219_LED_On(i / 2, MAX7219_DEBUG_STEPPER_QUEUE + (i & 1));
+          Max7219_LED_On(MAX7219_DEBUG_STEPPER_QUEUE + (i & 1), i / 2);
 
       last_depth = current_depth;
     }

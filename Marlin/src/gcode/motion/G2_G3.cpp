@@ -35,6 +35,10 @@
   #include "../../module/scara.h"
 #endif
 
+#if ENABLED(SCARA_FEEDRATE_SCALING) && ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  #include "../../feature/bedlevel/abl/abl.h"
+#endif
+
 #if N_ARC_CORRECTION < 1
   #undef N_ARC_CORRECTION
   #define N_ARC_CORRECTION 1
@@ -86,7 +90,8 @@ void plan_arc(
   if (angular_travel == 0 && current_position[p_axis] == cart[p_axis] && current_position[q_axis] == cart[q_axis])
     angular_travel = RADIANS(360);
 
-  const float mm_of_travel = HYPOT(angular_travel * radius, FABS(linear_travel));
+  const float flat_mm = radius * angular_travel,
+              mm_of_travel = linear_travel ? HYPOT(flat_mm, linear_travel) : ABS(flat_mm);
   if (mm_of_travel < 0.001) return;
 
   uint16_t segments = FLOOR(mm_of_travel / (MM_PER_ARC_SEGMENT));
@@ -136,16 +141,16 @@ void plan_arc(
 
   millis_t next_idle_ms = millis() + 200UL;
 
-  #if N_ARC_CORRECTION > 1
-    int8_t arc_recalc_count = N_ARC_CORRECTION;
-  #endif
-
   #if ENABLED(SCARA_FEEDRATE_SCALING)
     // SCARA needs to scale the feed rate from mm/s to degrees/s
     const float inv_segment_length = 1.0 / (MM_PER_ARC_SEGMENT),
                 inverse_secs = inv_segment_length * fr_mm_s;
-    float oldA = stepper.get_axis_position_degrees(A_AXIS),
-          oldB = stepper.get_axis_position_degrees(B_AXIS);
+    float oldA = planner.position_float[A_AXIS],
+          oldB = planner.position_float[B_AXIS];
+  #endif
+
+  #if N_ARC_CORRECTION > 1
+    int8_t arc_recalc_count = N_ARC_CORRECTION;
   #endif
 
   for (uint16_t i = 1; i < segments; i++) { // Iterate (segments-1) times
@@ -188,14 +193,21 @@ void plan_arc(
     clamp_to_software_endstops(raw);
 
     #if ENABLED(SCARA_FEEDRATE_SCALING)
-      // For SCARA scale the feed rate from mm/s to degrees/s.
+      // For SCARA scale the feed rate from mm/s to degrees/s
       // i.e., Complete the angular vector in the given time.
       inverse_kinematics(raw);
       ADJUST_DELTA(raw);
-      planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], raw[Z_AXIS], raw[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
+      if (!planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], raw[Z_AXIS], raw[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder))
+        break;
       oldA = delta[A_AXIS]; oldB = delta[B_AXIS];
+    #elif HAS_UBL_AND_CURVES
+      float pos[XYZ] = { raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS] };
+      planner.apply_leveling(pos);
+      if (!planner.buffer_segment(pos[X_AXIS], pos[Y_AXIS], pos[Z_AXIS], raw[E_AXIS], fr_mm_s, active_extruder))
+        break;
     #else
-      planner.buffer_line_kinematic(raw, fr_mm_s, active_extruder);
+      if (!planner.buffer_line_kinematic(raw, fr_mm_s, active_extruder))
+        break;
     #endif
   }
 
@@ -203,15 +215,18 @@ void plan_arc(
   #if ENABLED(SCARA_FEEDRATE_SCALING)
     inverse_kinematics(cart);
     ADJUST_DELTA(cart);
-    planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], cart[Z_AXIS], cart[E_AXIS], HYPOT(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB) * inverse_secs, active_extruder);
+    const float diff2 = HYPOT2(delta[A_AXIS] - oldA, delta[B_AXIS] - oldB);
+    if (diff2)
+      planner.buffer_segment(delta[A_AXIS], delta[B_AXIS], cart[Z_AXIS], cart[E_AXIS], SQRT(diff2) * inverse_secs, active_extruder);
+  #elif HAS_UBL_AND_CURVES
+    float pos[XYZ] = { cart[X_AXIS], cart[Y_AXIS], cart[Z_AXIS] };
+    planner.apply_leveling(pos);
+    planner.buffer_segment(pos[X_AXIS], pos[Y_AXIS], pos[Z_AXIS], cart[E_AXIS], fr_mm_s, active_extruder);
   #else
     planner.buffer_line_kinematic(cart, fr_mm_s, active_extruder);
   #endif
 
-  // As far as the parser is concerned, the position is now == target. In reality the
-  // motion control system might still be processing the action and the real tool position
-  // in any intermediate location.
-  set_current_from_destination();
+  COPY(current_position, cart);
 } // plan_arc
 
 /**
@@ -291,7 +306,7 @@ void GcodeSuite::G2_G3(const bool clockwise) {
 
       // Send the arc to the planner
       plan_arc(destination, arc_offset, clockwise);
-      refresh_cmd_timeout();
+      reset_stepper_timeout();
     }
     else {
       // Bad arguments

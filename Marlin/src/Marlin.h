@@ -40,7 +40,7 @@ void idle(
   #endif
 );
 
-void manage_inactivity(bool ignore_stepper_queue = false);
+void manage_inactivity(const bool ignore_stepper_queue=false);
 
 #if HAS_X2_ENABLE
   #define  enable_X() do{ X_ENABLE_WRITE( X_ENABLE_ON); X2_ENABLE_WRITE( X_ENABLE_ON); }while(0)
@@ -156,9 +156,8 @@ void manage_inactivity(bool ignore_stepper_queue = false);
 /**
  * The axis order in all axis related arrays is X, Y, Z, E
  */
-#define _AXIS(AXIS) AXIS ##_AXIS
-
 void enable_all_steppers();
+void disable_e_stepper(const uint8_t e);
 void disable_e_steppers();
 void disable_all_steppers();
 
@@ -176,6 +175,10 @@ extern volatile bool wait_for_heatup;
 
 #if HAS_RESUME_CONTINUE
   extern volatile bool wait_for_user;
+#endif
+
+#if HAS_AUTO_REPORTING || ENABLED(HOST_KEEPALIVE_FEATURE)
+  extern bool suspend_auto_report;
 #endif
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -198,17 +201,21 @@ extern millis_t max_inactive_time, stepper_inactive_time;
   #endif
 #endif
 
-#if ENABLED(ADVANCED_PAUSE_FEATURE)
-  enum AdvancedPauseMenuResponse {
-    ADVANCED_PAUSE_RESPONSE_WAIT_FOR,
-    ADVANCED_PAUSE_RESPONSE_EXTRUDE_MORE,
-    ADVANCED_PAUSE_RESPONSE_RESUME_PRINT
-  };
-  extern AdvancedPauseMenuResponse advanced_pause_menu_response;
+#if ENABLED(USE_CONTROLLER_FAN)
+  extern uint8_t controllerFanSpeed;
 #endif
 
-#if ENABLED(PID_EXTRUSION_SCALING)
-  extern int lpq_len;
+#if HAS_POWER_SWITCH
+  extern bool powersupply_on;
+  #define PSU_PIN_ON()  do{ OUT_WRITE(PS_ON_PIN, PS_ON_AWAKE); powersupply_on = true; }while(0)
+  #define PSU_PIN_OFF() do{ OUT_WRITE(PS_ON_PIN, PS_ON_ASLEEP); powersupply_on = false; }while(0)
+  #if ENABLED(AUTO_POWER_CONTROL)
+    #define PSU_ON()  powerManager.power_on()
+    #define PSU_OFF() powerManager.power_off()
+  #else
+    #define PSU_ON()  PSU_PIN_ON()
+    #define PSU_OFF() PSU_PIN_OFF()
+  #endif
 #endif
 
 bool pin_is_protected(const pin_t pin);

@@ -34,6 +34,7 @@
 
 #define MAPPER_E382E383
 #define DISPLAY_CHARSET_ISO10646_KANA
+#define CHARSIZE 3
 
 // This just to show the potential benefit of unicode.
 // This translation can be improved by using the full charset of unicode codeblock U+30A0 to U+30FF.
@@ -52,6 +53,7 @@
 #define MSG_AUTO_HOME_X                     _UxGT("Xジク ゲンテンフッキ")             // "Home X"
 #define MSG_AUTO_HOME_Y                     _UxGT("Yジク ゲンテンフッキ")             // "Home Y"
 #define MSG_AUTO_HOME_Z                     _UxGT("Zジク ゲンテンフッキ")             // "Home Z"
+#define MSG_TMC_Z_CALIBRATION               _UxGT("Zジク コウセイ")                 // "Calibrate Z"
 #define MSG_LEVEL_BED_HOMING                _UxGT("ゲンテンフッキチュウ")              // "Homing XYZ"
 #define MSG_LEVEL_BED_WAITING               _UxGT("レベリングカイシ")                // "Click to Begin"
 #define MSG_LEVEL_BED_NEXT_POINT            _UxGT("ツギノソクテイテンヘ")             // "Next Point"
@@ -77,7 +79,7 @@
 #define MSG_MOVE_AXIS                       _UxGT("ジクイドウ")                    // "Move axis"
 #define MSG_BED_LEVELING                    _UxGT("ベッドレベリング")                // "Bed leveling"
 #define MSG_LEVEL_BED                       _UxGT("ベッドレベリング")                // "Level bed"
-#define MSG_MOVING                          _UxGT("イドウチュウ")                   // "Moving..."
+#define MSG_MOVING                          _UxGT("イドウチュウ...")                // "Moving..."
 #define MSG_FREE_XY                         _UxGT("XYジク カイホウ")                // "Free XY"
 #define MSG_MOVE_X                          _UxGT("Xジク イドウ")                  // "Move X"
 #define MSG_MOVE_Y                          _UxGT("Yジク イドウ")                  // "Move Y"
@@ -106,9 +108,15 @@
 #define MSG_SELECT                          _UxGT("センタク")                     // "Select"
 #define MSG_ACC                             _UxGT("カソクド mm/s2")               // "Accel"
 #define MSG_JERK                            _UxGT("ヤクド mm/s")                  // "Jerk"
-#define MSG_VX_JERK                         _UxGT("Xジク ヤクド mm/s")             // "Vx-jerk"
-#define MSG_VY_JERK                         _UxGT("Yジク ヤクド mm/s")             // "Vy-jerk"
-#define MSG_VZ_JERK                         _UxGT("Zジク ヤクド mm/s")             // "Vz-jerk"
+#if IS_KINEMATIC
+  #define MSG_VA_JERK                       _UxGT("Aジク ヤクド mm/s")             // "Va-jerk"
+  #define MSG_VB_JERK                       _UxGT("Bジク ヤクド mm/s")             // "Vb-jerk"
+  #define MSG_VC_JERK                       _UxGT("Cジク ヤクド mm/s")             // "Vc-jerk"
+#else
+  #define MSG_VA_JERK                       _UxGT("Xジク ヤクド mm/s")             // "Vx-jerk"
+  #define MSG_VB_JERK                       _UxGT("Yジク ヤクド mm/s")             // "Vy-jerk"
+  #define MSG_VC_JERK                       _UxGT("Zジク ヤクド mm/s")             // "Vz-jerk"
+#endif
 #define MSG_VE_JERK                         _UxGT("エクストルーダー ヤクド")          // "Ve-jerk"
 #define MSG_VMAX                            _UxGT("サイダイオクリソクド ")            // "Vmax "
 #define MSG_VMIN                            _UxGT("サイショウオクリソクド")           // "Vmin"
@@ -135,9 +143,8 @@
 #define MSG_STOP_PRINT                      _UxGT("プリントテイシ")                 // "Stop print"
 #define MSG_CARD_MENU                       _UxGT("SDカードカラプリント")            // "Print from SD"
 #define MSG_NO_CARD                         _UxGT("SDカードガアリマセン")            // "No SD card"
-#define MSG_DWELL                           _UxGT("キュウシ")                     // "Sleep..."
-#define MSG_USERWAIT                        _UxGT("シバラクオマチクダサイ")           // "Wait for user..."
-#define MSG_RESUMING                        _UxGT("プリントサイカイ")                // "Resuming print"
+#define MSG_DWELL                           _UxGT("キュウシ...")                  // "Sleep..."
+#define MSG_USERWAIT                        _UxGT("シバラクオマチクダサイ...")        // "Wait for user..."
 #define MSG_PRINT_ABORTED                   _UxGT("プリントガチュウシサレマシタ")       // "Print aborted"
 #define MSG_NO_MOVE                         _UxGT("ウゴキマセン")                  // "No move."
 #define MSG_KILLED                          _UxGT("ヒジョウテイシ")                  // "KILLED. "
@@ -176,10 +183,8 @@
 #define MSG_SHORT_DAY                       _UxGT("d")                          // One character only
 #define MSG_SHORT_HOUR                      _UxGT("h")                          // One character only
 #define MSG_SHORT_MINUTE                    _UxGT("m")                          // One character only
-#define MSG_HEATING                         _UxGT("カネツチュウ")                   // "Heating..."
-#define MSG_HEATING_COMPLETE                _UxGT("カネツカンリョウ")                 // "Heating done."
-#define MSG_BED_HEATING                     _UxGT("ベッド カネツチュウ")              // "Bed Heating."
-#define MSG_BED_DONE                        _UxGT("ベッド カネツカンリョウ")            // "Bed done."
+#define MSG_HEATING                         _UxGT("カネツチュウ...")                // "Heating..."
+#define MSG_BED_HEATING                     _UxGT("ベッド カネツチュウ...")           // "Bed Heating..."
 #define MSG_DELTA_CALIBRATE                 _UxGT("デルタ コウセイ")                // "Delta Calibration"
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Xジク コウセイ")                 // "Calibrate X"
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Yジク コウセイ")                 // "Calibrate Y"

@@ -43,8 +43,6 @@
 #define FALLING      0x03
 #define RISING       0x04
 
-#define E2END 0xFFF // EEPROM end address
-
 typedef uint8_t byte;
 #define PROGMEM
 #define PSTR(v) (v)
@@ -111,8 +109,8 @@ void analogWrite(pin_t, int);
 uint16_t analogRead(pin_t);
 
 // EEPROM
-void eeprom_write_byte(unsigned char *pos, unsigned char value);
-unsigned char eeprom_read_byte(unsigned char *pos);
+void eeprom_write_byte(uint8_t *pos, unsigned char value);
+uint8_t eeprom_read_byte(uint8_t *pos);
 void eeprom_read_block (void *__dst, const void *__src, size_t __n);
 void eeprom_update_block (const void *__src, void *__dst, size_t __n);
 

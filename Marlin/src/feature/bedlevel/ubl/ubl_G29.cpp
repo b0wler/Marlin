@@ -29,6 +29,7 @@
   #include "ubl.h"
 
   #include "../../../Marlin.h"
+  #include "../../../HAL/shared/persistent_store_api.h"
   #include "../../../libs/hex_print_routines.h"
   #include "../../../module/configuration_store.h"
   #include "../../../lcd/ultralcd.h"
@@ -303,10 +304,10 @@
 
     // Check for commands that require the printer to be homed
     if (may_move) {
+      if (axis_unhomed_error()) gcode.home_all_axes();
       #if ENABLED(DUAL_X_CARRIAGE)
         if (active_extruder != 0) tool_change(0);
       #endif
-      if (axis_unhomed_error()) gcode.home_all_axes();
     }
 
     // Invalidate Mesh Points. This command is a little bit asymmetrical because
@@ -1026,12 +1027,12 @@
 
   static uint8_t ubl_state_at_invocation = 0;
 
-  #ifdef UBL_DEVEL_DEBUGGING
+  #if ENABLED(UBL_DEVEL_DEBUGGING)
     static uint8_t ubl_state_recursion_chk = 0;
   #endif
 
   void unified_bed_leveling::save_ubl_active_state_and_disable() {
-    #ifdef UBL_DEVEL_DEBUGGING
+    #if ENABLED(UBL_DEVEL_DEBUGGING)
       ubl_state_recursion_chk++;
       if (ubl_state_recursion_chk != 1) {
         SERIAL_ECHOLNPGM("save_ubl_active_state_and_disabled() called multiple times in a row.");
@@ -1047,7 +1048,7 @@
   }
 
   void unified_bed_leveling::restore_ubl_active_state_and_leave() {
-    #ifdef UBL_DEVEL_DEBUGGING
+    #if ENABLED(UBL_DEVEL_DEBUGGING)
       if (--ubl_state_recursion_chk) {
         SERIAL_ECHOLNPGM("restore_ubl_active_state_and_leave() called too many times.");
         #if ENABLED(NEWPANEL)
@@ -1131,7 +1132,7 @@
     SERIAL_EOL();
     safe_delay(50);
 
-    #ifdef UBL_DEVEL_DEBUGGING
+    #if ENABLED(UBL_DEVEL_DEBUGGING)
       SERIAL_PROTOCOLLNPAIR("ubl_state_at_invocation :", ubl_state_at_invocation);
       SERIAL_EOL();
       SERIAL_PROTOCOLLNPAIR("ubl_state_recursion_chk :", ubl_state_recursion_chk);
@@ -1167,24 +1168,24 @@
    * right now, it is good to have the extra information. Soon... we prune this.
    */
   void unified_bed_leveling::g29_eeprom_dump() {
-    unsigned char cccc;
-    unsigned int  kkkk;  // Needs to be of unspecfied size to compile clean on all platforms
+    uint8_t cccc;
 
     SERIAL_ECHO_START();
     SERIAL_ECHOLNPGM("EEPROM Dump:");
-    for (uint16_t i = 0; i <= E2END; i += 16) {
+    persistentStore.access_start();
+    for (uint16_t i = 0; i < persistentStore.capacity(); i += 16) {
       if (!(i & 0x3)) idle();
       print_hex_word(i);
       SERIAL_ECHOPGM(": ");
       for (uint16_t j = 0; j < 16; j++) {
-        kkkk = i + j;
-        eeprom_read_block(&cccc, (const void *)kkkk, sizeof(unsigned char));
+        persistentStore.read_data(i + j, &cccc, sizeof(uint8_t));
         print_hex_byte(cccc);
         SERIAL_ECHO(' ');
       }
       SERIAL_EOL();
     }
     SERIAL_EOL();
+    persistentStore.access_finish();
   }
 
   /**

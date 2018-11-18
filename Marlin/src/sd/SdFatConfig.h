@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * SdFatConfig.h
@@ -28,11 +29,7 @@
  * This file is part of the Arduino Sd2Card Library
  */
 
-#ifndef _SDFATCONFIG_H_
-#define _SDFATCONFIG_H_
-
 #include "../inc/MarlinConfig.h"
-
 
 /**
  * To use multiple SD cards set USE_MULTIPLE_CARDS nonzero.
@@ -109,9 +106,7 @@
  * Defines for 8.3 and long (vfat) filenames
  */
 
-#define FILENAME_LENGTH 13 // Number of UTF-16 characters per entry
+#define FILENAME_LENGTH 12 // Number of UTF-16 characters per entry
 
 // Total bytes needed to store a single long filename
-#define LONG_FILENAME_LENGTH (FILENAME_LENGTH * MAX_VFAT_ENTRIES + 1)
-
-#endif // _SDFATCONFIG_H_
+#define LONG_FILENAME_LENGTH ((FILENAME_LENGTH) * (MAX_VFAT_ENTRIES))

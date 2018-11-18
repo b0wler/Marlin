@@ -23,8 +23,12 @@
 #include "../gcode.h"
 #include "../../inc/MarlinConfig.h"
 
+#if NUM_SERIAL > 1
+  #include "../../gcode/queue.h"
+#endif
+
 #if ENABLED(EXTENDED_CAPABILITIES_REPORT)
-  static void cap_line(const char * const name, bool ena=false) {
+  static void cap_line(PGM_P const name, bool ena=false) {
     SERIAL_PROTOCOLPGM("Cap:");
     serialprintPGM(name);
     SERIAL_CHAR(':');
@@ -36,7 +40,14 @@
  * M115: Capabilities string
  */
 void GcodeSuite::M115() {
-  SERIAL_PROTOCOLLNPGM(MSG_M115_REPORT);
+  #if NUM_SERIAL > 1
+    const int8_t port = command_queue_port[cmd_queue_index_r];
+    #define CAPLINE(STR,...) cap_line(PSTR(STR), port, __VA_ARGS__)
+  #else
+    #define CAPLINE(STR,...) cap_line(PSTR(STR), __VA_ARGS__)
+  #endif
+
+  SERIAL_PROTOCOLLNPGM_P(port, MSG_M115_REPORT);
 
   #if ENABLED(EXTENDED_CAPABILITIES_REPORT)
 
@@ -124,6 +135,34 @@ void GcodeSuite::M115() {
     // EMERGENCY_PARSER (M108, M112, M410)
     cap_line(PSTR("EMERGENCY_PARSER")
       #if ENABLED(EMERGENCY_PARSER)
+        , true
+      #endif
+    );
+
+    // AUTOREPORT_SD_STATUS (M27 extension)
+    cap_line(PSTR("AUTOREPORT_SD_STATUS")
+      #if ENABLED(AUTO_REPORT_SD_STATUS)
+        , true
+      #endif
+    );
+
+    // THERMAL_PROTECTION
+    cap_line(PSTR("THERMAL_PROTECTION")
+      #if ENABLED(THERMAL_PROTECTION_HOTENDS) && ENABLED(THERMAL_PROTECTION_BED)
+        , true
+      #endif
+    );
+
+    // PAREN_COMMENTS
+    cap_line(PSTR("PAREN_COMMENTS")
+      #if ENABLED(PAREN_COMMENTS)
+        , true
+      #endif
+    );
+
+    // MOTION_MODES (M80-M89)
+    cap_line(PSTR("MOTION_MODES")
+      #if ENABLED(GCODE_MOTION_MODES)
         , true
       #endif
     );

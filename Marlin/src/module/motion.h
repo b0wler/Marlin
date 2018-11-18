@@ -36,6 +36,9 @@
   #include "../module/scara.h"
 #endif
 
+// Error margin to work around float imprecision
+constexpr float slop = 0.0001;
+
 extern bool relative_mode;
 
 extern float current_position[XYZE],  // High-level current tool position
@@ -71,11 +74,16 @@ extern float feedrate_mm_s;
  * Feedrate scaling and conversion
  */
 extern int16_t feedrate_percentage;
-#define MMS_SCALED(MM_S) ((MM_S)*feedrate_percentage*0.01)
+#define MMS_SCALED(MM_S) ((MM_S)*feedrate_percentage*0.01f)
 
-extern uint8_t active_extruder;
+// The active extruder (tool). Set with T<extruder> command.
+#if EXTRUDERS > 1
+  extern uint8_t active_extruder;
+#else
+  constexpr uint8_t active_extruder = 0;
+#endif
 
-#if HOTENDS > 1
+#if HAS_HOTEND_OFFSET
   extern float hotend_offset[XYZ][HOTENDS];
 #endif
 
@@ -121,13 +129,6 @@ void set_current_from_steppers_for_axis(const AxisEnum axis);
 void sync_plan_position();
 void sync_plan_position_e();
 
-#if IS_KINEMATIC
-  void sync_plan_position_kinematic();
-  #define SYNC_PLAN_POSITION_KINEMATIC() sync_plan_position_kinematic()
-#else
-  #define SYNC_PLAN_POSITION_KINEMATIC() sync_plan_position()
-#endif
-
 /**
  * Move the planner to the current position from wherever it last moved
  * (or from wherever it has been told it is located).
@@ -141,7 +142,7 @@ void line_to_current_position();
 void buffer_line_to_destination(const float fr_mm_s);
 
 #if IS_KINEMATIC
-  void prepare_uninterpolated_move_to_destination(const float fr_mm_s=0.0);
+  void prepare_uninterpolated_move_to_destination(const float fr_mm_s=0);
 #endif
 
 void prepare_move_to_destination();
@@ -149,10 +150,10 @@ void prepare_move_to_destination();
 /**
  * Blocking movement and shorthand functions
  */
-void do_blocking_move_to(const float &x, const float &y, const float &z, const float &fr_mm_s=0.0);
-void do_blocking_move_to_x(const float &x, const float &fr_mm_s=0.0);
-void do_blocking_move_to_z(const float &z, const float &fr_mm_s=0.0);
-void do_blocking_move_to_xy(const float &x, const float &y, const float &fr_mm_s=0.0);
+void do_blocking_move_to(const float rx, const float ry, const float rz, const float &fr_mm_s=0);
+void do_blocking_move_to_x(const float &rx, const float &fr_mm_s=0);
+void do_blocking_move_to_z(const float &rz, const float &fr_mm_s=0);
+void do_blocking_move_to_xy(const float &rx, const float &ry, const float &fr_mm_s=0);
 
 void setup_for_endstop_or_probe_move();
 void clean_up_after_endstop_or_probe_move();
@@ -189,13 +190,18 @@ void clean_up_after_endstop_or_probe_move();
 void set_axis_is_at_home(const AxisEnum axis);
 
 void homeaxis(const AxisEnum axis);
-#define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
+
+#if ENABLED(SENSORLESS_HOMING)
+  void sensorless_homing_per_axis(const AxisEnum axis, const bool enable=true);
+#endif
 
 //
 // Macros
 //
 
-// Workspace offsets
+/**
+ * Workspace offsets
+ */
 #if HAS_WORKSPACE_OFFSET
   #if HAS_HOME_OFFSET
     extern float home_offset[XYZ];
@@ -203,36 +209,26 @@ void homeaxis(const AxisEnum axis);
   #if HAS_POSITION_SHIFT
     extern float position_shift[XYZ];
   #endif
-#endif
-
-#if HAS_HOME_OFFSET && HAS_POSITION_SHIFT
-  extern float workspace_offset[XYZ];
-  #define WORKSPACE_OFFSET(AXIS) workspace_offset[AXIS]
-#elif HAS_HOME_OFFSET
-  #define WORKSPACE_OFFSET(AXIS) home_offset[AXIS]
-#elif HAS_POSITION_SHIFT
-  #define WORKSPACE_OFFSET(AXIS) position_shift[AXIS]
+  #if HAS_HOME_OFFSET && HAS_POSITION_SHIFT
+    extern float workspace_offset[XYZ];
+    #define WORKSPACE_OFFSET(AXIS) workspace_offset[AXIS]
+  #elif HAS_HOME_OFFSET
+    #define WORKSPACE_OFFSET(AXIS) home_offset[AXIS]
+  #elif HAS_POSITION_SHIFT
+    #define WORKSPACE_OFFSET(AXIS) position_shift[AXIS]
+  #endif
+  #define NATIVE_TO_LOGICAL(POS, AXIS) ((POS) + WORKSPACE_OFFSET(AXIS))
+  #define LOGICAL_TO_NATIVE(POS, AXIS) ((POS) - WORKSPACE_OFFSET(AXIS))
 #else
-  #define WORKSPACE_OFFSET(AXIS) 0
+  #define NATIVE_TO_LOGICAL(POS, AXIS) (POS)
+  #define LOGICAL_TO_NATIVE(POS, AXIS) (POS)
 #endif
-
-#define NATIVE_TO_LOGICAL(POS, AXIS) ((POS) + WORKSPACE_OFFSET(AXIS))
-#define LOGICAL_TO_NATIVE(POS, AXIS) ((POS) - WORKSPACE_OFFSET(AXIS))
-
-#if HAS_POSITION_SHIFT || DISABLED(DELTA)
-  #define LOGICAL_X_POSITION(POS)   NATIVE_TO_LOGICAL(POS, X_AXIS)
-  #define LOGICAL_Y_POSITION(POS)   NATIVE_TO_LOGICAL(POS, Y_AXIS)
-  #define RAW_X_POSITION(POS)       LOGICAL_TO_NATIVE(POS, X_AXIS)
-  #define RAW_Y_POSITION(POS)       LOGICAL_TO_NATIVE(POS, Y_AXIS)
-#else
-  #define LOGICAL_X_POSITION(POS)   (POS)
-  #define LOGICAL_Y_POSITION(POS)   (POS)
-  #define RAW_X_POSITION(POS)       (POS)
-  #define RAW_Y_POSITION(POS)       (POS)
-#endif
-
-#define LOGICAL_Z_POSITION(POS)     NATIVE_TO_LOGICAL(POS, Z_AXIS)
-#define RAW_Z_POSITION(POS)         LOGICAL_TO_NATIVE(POS, Z_AXIS)
+#define LOGICAL_X_POSITION(POS) NATIVE_TO_LOGICAL(POS, X_AXIS)
+#define LOGICAL_Y_POSITION(POS) NATIVE_TO_LOGICAL(POS, Y_AXIS)
+#define LOGICAL_Z_POSITION(POS) NATIVE_TO_LOGICAL(POS, Z_AXIS)
+#define RAW_X_POSITION(POS)     LOGICAL_TO_NATIVE(POS, X_AXIS)
+#define RAW_Y_POSITION(POS)     LOGICAL_TO_NATIVE(POS, Y_AXIS)
+#define RAW_Z_POSITION(POS)     LOGICAL_TO_NATIVE(POS, Z_AXIS)
 
 /**
  * position_is_reachable family of functions
@@ -240,51 +236,76 @@ void homeaxis(const AxisEnum axis);
 
 #if IS_KINEMATIC // (DELTA or SCARA)
 
-  inline bool position_is_reachable(const float &rx, const float &ry) {
+  #if IS_SCARA
+    extern const float L1, L2;
+  #endif
+
+  // Return true if the given point is within the printable area
+  inline bool position_is_reachable(const float &rx, const float &ry, const float inset=0) {
     #if ENABLED(DELTA)
-      return HYPOT2(rx, ry) <= sq(DELTA_PRINTABLE_RADIUS);
+      return HYPOT2(rx, ry) <= sq(DELTA_PRINTABLE_RADIUS - inset);
     #elif IS_SCARA
-      #if MIDDLE_DEAD_ZONE_R > 0
-        const float R2 = HYPOT2(rx - SCARA_OFFSET_X, ry - SCARA_OFFSET_Y);
-        return R2 >= sq(float(MIDDLE_DEAD_ZONE_R)) && R2 <= sq(L1 + L2);
-      #else
-        return HYPOT2(rx - SCARA_OFFSET_X, ry - SCARA_OFFSET_Y) <= sq(L1 + L2);
-      #endif
-    #else // CARTESIAN
-      // To be migrated from MakerArm branch in future
+      const float R2 = HYPOT2(rx - SCARA_OFFSET_X, ry - SCARA_OFFSET_Y);
+      return (
+        R2 <= sq(L1 + L2) - inset
+        #if MIDDLE_DEAD_ZONE_R > 0
+          && R2 >= sq(float(MIDDLE_DEAD_ZONE_R))
+        #endif
+      );
     #endif
   }
 
-  inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
-
-    // Both the nozzle and the probe must be able to reach the point.
-    // This won't work on SCARA since the probe offset rotates with the arm.
-
-    return position_is_reachable(rx, ry)
-        && position_is_reachable(rx - (X_PROBE_OFFSET_FROM_EXTRUDER), ry - (Y_PROBE_OFFSET_FROM_EXTRUDER));
-  }
+  #if HAS_BED_PROBE
+    // Return true if the both nozzle and the probe can reach the given point.
+    // Note: This won't work on SCARA since the probe offset rotates with the arm.
+    inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
+      return position_is_reachable(rx - (X_PROBE_OFFSET_FROM_EXTRUDER), ry - (Y_PROBE_OFFSET_FROM_EXTRUDER))
+             && position_is_reachable(rx, ry, ABS(MIN_PROBE_EDGE));
+    }
+  #endif
 
 #else // CARTESIAN
 
+  // Return true if the given position is within the machine bounds.
   inline bool position_is_reachable(const float &rx, const float &ry) {
-      // Add 0.001 margin to deal with float imprecision
-      return WITHIN(rx, X_MIN_POS - 0.001, X_MAX_POS + 0.001)
-          && WITHIN(ry, Y_MIN_POS - 0.001, Y_MAX_POS + 0.001);
+    if (!WITHIN(ry, Y_MIN_POS - slop, Y_MAX_POS + slop)) return false;
+    #if ENABLED(DUAL_X_CARRIAGE)
+      if (active_extruder)
+        return WITHIN(rx, X2_MIN_POS - slop, X2_MAX_POS + slop);
+      else
+        return WITHIN(rx, X1_MIN_POS - slop, X1_MAX_POS + slop);
+    #else
+      return WITHIN(rx, X_MIN_POS - slop, X_MAX_POS + slop);
+    #endif
   }
 
-  inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
-      // Add 0.001 margin to deal with float imprecision
-      return WITHIN(rx, MIN_PROBE_X - 0.001, MAX_PROBE_X + 0.001)
-          && WITHIN(ry, MIN_PROBE_Y - 0.001, MAX_PROBE_Y + 0.001);
-  }
+  #if HAS_BED_PROBE
+    /**
+     * Return whether the given position is within the bed, and whether the nozzle
+     * can reach the position required to put the probe at the given position.
+     *
+     * Example: For a probe offset of -10,+10, then for the probe to reach 0,0 the
+     *          nozzle must be be able to reach +10,-10.
+     */
+    inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
+      return position_is_reachable(rx - (X_PROBE_OFFSET_FROM_EXTRUDER), ry - (Y_PROBE_OFFSET_FROM_EXTRUDER))
+          && WITHIN(rx, MIN_PROBE_X - slop, MAX_PROBE_X + slop)
+          && WITHIN(ry, MIN_PROBE_Y - slop, MAX_PROBE_Y + slop);
+    }
+  #endif
 
 #endif // CARTESIAN
+
+#if !HAS_BED_PROBE
+  FORCE_INLINE bool position_is_reachable_by_probe(const float &rx, const float &ry) { return position_is_reachable(rx, ry); }
+#endif
 
 /**
  * Dual X Carriage / Dual Nozzle
  */
 #if ENABLED(DUAL_X_CARRIAGE) || ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
-  extern bool extruder_duplication_enabled;       // Used in Dual X mode 2
+  extern bool extruder_duplication_enabled,       // Used in Dual X mode 2
+              scaled_duplication_mode;            // Used in Dual X mode 3
 #endif
 
 /**
@@ -292,19 +313,22 @@ void homeaxis(const AxisEnum axis);
  */
 #if ENABLED(DUAL_X_CARRIAGE)
 
-  enum DualXMode {
-    DXC_FULL_CONTROL_MODE,  // DUAL_X_CARRIAGE only
-    DXC_AUTO_PARK_MODE,     // DUAL_X_CARRIAGE only
-    DXC_DUPLICATION_MODE
+  enum DualXMode : char {
+    DXC_FULL_CONTROL_MODE,
+    DXC_AUTO_PARK_MODE,
+    DXC_DUPLICATION_MODE,
+    DXC_SCALED_DUPLICATION_MODE
   };
 
   extern DualXMode dual_x_carriage_mode;
   extern float inactive_extruder_x_pos,           // used in mode 0 & 1
                raised_parked_position[XYZE],      // used in mode 1
-               duplicate_extruder_x_offset;       // used in mode 2
-  extern bool active_extruder_parked;             // used in mode 1 & 2
+               duplicate_extruder_x_offset;       // used in mode 2 & 3
+  extern bool active_extruder_parked;             // used in mode 1, 2 & 3
   extern millis_t delayed_move_time;              // used in mode 1
-  extern int16_t duplicate_extruder_temp_offset;  // used in mode 2
+  extern int16_t duplicate_extruder_temp_offset;  // used in mode 2 & 3
+
+  FORCE_INLINE bool dxc_is_duplicating() { return dual_x_carriage_mode >= DXC_DUPLICATION_MODE; }
 
   float x_home_pos(const int extruder);
 
@@ -312,13 +336,13 @@ void homeaxis(const AxisEnum axis);
 
 #elif ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
 
-  enum DualXMode {
+  enum DualXMode : char {
     DXC_DUPLICATION_MODE = 2
   };
 
 #endif
 
-#if HAS_WORKSPACE_OFFSET || ENABLED(DUAL_X_CARRIAGE)
+#if HAS_WORKSPACE_OFFSET || ENABLED(DUAL_X_CARRIAGE) || ENABLED(DELTA)
   void update_software_endstops(const AxisEnum axis);
 #endif
 

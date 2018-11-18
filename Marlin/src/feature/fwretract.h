@@ -45,7 +45,9 @@ public:
                retract_recover_feedrate_mm_s,      // M208 F - G11 Recover feedrate
                swap_retract_length,                // M207 W - G10 Swap Retract length
                swap_retract_recover_length,        // M208 W - G11 Swap Recover length
-               swap_retract_recover_feedrate_mm_s; // M208 R - G11 Swap Recover feedrate
+               swap_retract_recover_feedrate_mm_s, // M208 R - G11 Swap Recover feedrate
+               current_retract[EXTRUDERS],         // Retract value used by planner
+               current_hop;                        // Hop value used by planner
 
   FWRetract() { reset(); }
 
@@ -56,8 +58,10 @@ public:
   }
 
   static void enable_autoretract(const bool enable) {
-    autoretract_enabled = enable;
-    refresh_autoretract();
+    #if ENABLED(FWRETRACT_AUTORETRACT)
+      autoretract_enabled = enable;
+      refresh_autoretract();
+    #endif
   }
 
   static void retract(const bool retracting

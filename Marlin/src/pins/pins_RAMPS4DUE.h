@@ -56,7 +56,22 @@
 #define TEMP_0_PIN          9   // Analog Input
 
 #undef TEMP_1_PIN
-#define TEMP_1_PIN         -1   // Analog Input
+#define TEMP_1_PIN         11   // Analog Input
 
 #undef TEMP_BED_PIN
 #define TEMP_BED_PIN       10   // Analog Input
+
+#undef FAN_PIN
+#define FAN_PIN		       11
+
+#undef FAN0_PIN
+#define FAN0_PIN		   6
+
+#undef FAN1_PIN
+#define FAN1_PIN		   5
+
+//#undef FAN2_PIN
+//#define FAN2_PIN		   5
+
+#undef KILL_PIN
+#define KILL_PIN		   25

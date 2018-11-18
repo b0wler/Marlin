@@ -19,25 +19,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
-#ifndef _MARLIN_CONFIG_H_
-#define _MARLIN_CONFIG_H_
+//
+// Prefix header for all Marlin sources
+//
 
 #include "MarlinConfigPre.h"
 
-#include "../HAL/HAL.h"
+#include HAL_PATH(../HAL, HAL.h)
+
 #include "../pins/pins.h"
+
 #if defined(__AVR__) && !defined(USBCON)
   #define HardwareSerial_h // trick to disable the standard HWserial
 #endif
+
 #include "Conditionals_post.h"
 #include "SanityCheck.h"
-#include "../HAL/HAL_SanityCheck.h"
+
+#include HAL_PATH(../HAL, SanityCheck.h)
 
 // Include all core headers
 #include "../core/enum.h"
 #include "../core/language.h"
 #include "../core/utility.h"
 #include "../core/serial.h"
-
-#endif // _MARLIN_CONFIG_H_
+#include "../core/minmax.h"

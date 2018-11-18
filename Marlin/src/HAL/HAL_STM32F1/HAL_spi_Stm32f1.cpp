@@ -36,11 +36,12 @@
 // Includes
 // --------------------------------------------------------------------------
 
-#include "../HAL.h"
-#include "SPI.h"
+#include "HAL.h"
+#include "../shared/HAL_SPI.h"
 #include "pins_arduino.h"
 #include "spi_pins.h"
 #include "../../core/macros.h"
+#include <SPI.h>
 
 // --------------------------------------------------------------------------
 // Public Variables
@@ -53,6 +54,7 @@ static SPISettings spiConfig;
 // --------------------------------------------------------------------------
 
 #if ENABLED(SOFTWARE_SPI)
+
   // --------------------------------------------------------------------------
   // Software SPI
   // --------------------------------------------------------------------------
@@ -79,8 +81,8 @@ void spiBegin() {
   #if !PIN_EXISTS(SS)
     #error "SS_PIN not defined!"
   #endif
-  WRITE(SS_PIN, HIGH);
   SET_OUTPUT(SS_PIN);
+  WRITE(SS_PIN, HIGH);
 }
 
 /**
@@ -94,16 +96,15 @@ void spiBegin() {
 void spiInit(uint8_t spiRate) {
   uint8_t  clock;
   switch (spiRate) {
-  case SPI_FULL_SPEED:    clock = SPI_CLOCK_DIV2 ; break;
-  case SPI_HALF_SPEED:    clock = SPI_CLOCK_DIV4 ; break;
-  case SPI_QUARTER_SPEED: clock = SPI_CLOCK_DIV8 ; break;
-  case SPI_EIGHTH_SPEED:  clock = SPI_CLOCK_DIV16; break;
-  case SPI_SPEED_5:       clock = SPI_CLOCK_DIV32; break;
-  case SPI_SPEED_6:       clock = SPI_CLOCK_DIV64; break;
-  default:
-    clock = SPI_CLOCK_DIV2; // Default from the SPI library
+    case SPI_FULL_SPEED:    clock = SPI_CLOCK_DIV2 ; break;
+    case SPI_HALF_SPEED:    clock = SPI_CLOCK_DIV4 ; break;
+    case SPI_QUARTER_SPEED: clock = SPI_CLOCK_DIV8 ; break;
+    case SPI_EIGHTH_SPEED:  clock = SPI_CLOCK_DIV16; break;
+    case SPI_SPEED_5:       clock = SPI_CLOCK_DIV32; break;
+    case SPI_SPEED_6:       clock = SPI_CLOCK_DIV64; break;
+    default:                clock = SPI_CLOCK_DIV2; // Default from the SPI library
   }
-  spiConfig = SPISettings(clock, MSBFIRST, SPI_MODE0);
+  spiConfig = SPISettings(clock, MSBFIRST, SPI_MODE3);
   SPI.begin();
 }
 
@@ -166,10 +167,9 @@ void spiSendBlock(uint8_t token, const uint8_t* buf) {
 
 /** Begin SPI transaction, set clock, bit order, data mode */
 void spiBeginTransaction(uint32_t spiClock, uint8_t bitOrder, uint8_t dataMode) {
-  spiConfig = SPISettings(spiClock, bitOrder, dataMode);
-  
+  spiConfig = SPISettings(spiClock, (BitOrder)bitOrder, dataMode);
   SPI.beginTransaction(spiConfig);
-}    
+}
 
 #endif // SOFTWARE_SPI
 

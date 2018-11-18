@@ -25,7 +25,7 @@
 
 #include "../inc/MarlinConfig.h"
 
-#if ENABLED(SWITCHING_EXTRUDER)
+#if DO_SWITCH_EXTRUDER
   void move_extruder_servo(const uint8_t e);
 #endif
 
@@ -49,6 +49,16 @@
   void pe_magnet_init();
 
 #endif // PARKING_EXTRUDER
+
+#if ENABLED(SINGLENOZZLE)
+  extern float singlenozzle_swap_length;
+  extern int16_t singlenozzle_prime_speed,
+                 singlenozzle_retract_speed;
+  extern uint16_t singlenozzle_temp[EXTRUDERS];
+  #if FAN_COUNT > 0
+    extern uint8_t singlenozzle_fan_speed[EXTRUDERS];
+  #endif
+#endif
 
 /**
  * Perform a tool-change, which may result in moving the

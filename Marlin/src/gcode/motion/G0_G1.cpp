@@ -25,7 +25,7 @@
 
 #include "../../Marlin.h"
 
-#if ENABLED(FWRETRACT)
+#if ENABLED(FWRETRACT) && ENABLED(FWRETRACT_AUTORETRACT)
   #include "../../feature/fwretract.h"
 #endif
 
@@ -54,14 +54,14 @@ void GcodeSuite::G0_G1(
   if (IsRunning() && G0_G1_CONDITION) {
     get_destination_from_command(); // For X Y Z E F
 
-    #if ENABLED(FWRETRACT)
+    #if ENABLED(FWRETRACT) && ENABLED(FWRETRACT_AUTORETRACT)
 
       if (MIN_AUTORETRACT <= MAX_AUTORETRACT) {
         // When M209 Autoretract is enabled, convert E-only moves to firmware retract/recover moves
         if (fwretract.autoretract_enabled && parser.seen('E') && !(parser.seen('X') || parser.seen('Y') || parser.seen('Z'))) {
           const float echange = destination[E_AXIS] - current_position[E_AXIS];
           // Is this a retract or recover move?
-          if (WITHIN(FABS(echange), MIN_AUTORETRACT, MAX_AUTORETRACT) && fwretract.retracted[active_extruder] == (echange > 0.0)) {
+          if (WITHIN(ABS(echange), MIN_AUTORETRACT, MAX_AUTORETRACT) && fwretract.retracted[active_extruder] == (echange > 0.0)) {
             current_position[E_AXIS] = destination[E_AXIS]; // Hide a G1-based retract/recover from calculations
             sync_plan_position_e();                         // AND from the planner
             return fwretract.retract(echange < 0.0);        // Firmware-based retract/recover (double-retract ignored)
@@ -79,12 +79,12 @@ void GcodeSuite::G0_G1(
 
     #if ENABLED(NANODLP_Z_SYNC)
       #if ENABLED(NANODLP_ALL_AXIS)
-        #define _MOVE_SYNC true                 // For any move wait and output sync message
+        #define _MOVE_SYNC parser.seenval('X') || parser.seenval('Y') || parser.seenval('Z')  // For any move wait and output sync message
       #else
         #define _MOVE_SYNC parser.seenval('Z')  // Only for Z move
       #endif
       if (_MOVE_SYNC) {
-        stepper.synchronize();
+        planner.synchronize();
         SERIAL_ECHOLNPGM(MSG_Z_MOVE_COMP);
       }
     #endif

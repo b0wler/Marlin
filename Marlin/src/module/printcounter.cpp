@@ -22,79 +22,90 @@
 
 #include "../inc/MarlinConfig.h"
 
-#if ENABLED(PRINTCOUNTER)
+#if DISABLED(PRINTCOUNTER)
+
+#include "../libs/stopwatch.h"
+Stopwatch print_job_timer;      // Global Print Job Timer instance
+
+#else // PRINTCOUNTER
 
 #include "printcounter.h"
-
 #include "../Marlin.h"
-#include "../libs/duration_t.h"
+#include "../HAL/shared/persistent_store_api.h"
 
-PrintCounter::PrintCounter(): super() {
-  this->loadStats();
-}
+PrintCounter print_job_timer;   // Global Print Job Timer instance
+
+printStatistics PrintCounter::data;
+
+const PrintCounter::promdress PrintCounter::address = STATS_EEPROM_ADDRESS;
+
+millis_t PrintCounter::lastDuration;
+bool PrintCounter::loaded = false;
 
 millis_t PrintCounter::deltaDuration() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("deltaDuration"));
+    debug(PSTR("deltaDuration"));
   #endif
 
-  millis_t tmp = this->lastDuration;
-  this->lastDuration = this->duration();
-  return this->lastDuration - tmp;
+  millis_t tmp = lastDuration;
+  lastDuration = duration();
+  return lastDuration - tmp;
 }
 
-bool PrintCounter::isLoaded() {
-  return this->loaded;
-}
-
-void PrintCounter::incFilamentUsed(double const &amount) {
+void PrintCounter::incFilamentUsed(float const &amount) {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("incFilamentUsed"));
+    debug(PSTR("incFilamentUsed"));
   #endif
 
   // Refuses to update data if object is not loaded
-  if (!this->isLoaded()) return;
+  if (!isLoaded()) return;
 
-  this->data.filamentUsed += amount; // mm
+  data.filamentUsed += amount; // mm
 }
-
 
 void PrintCounter::initStats() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("initStats"));
+    debug(PSTR("initStats"));
   #endif
 
-  this->loaded = true;
-  this->data = { 0, 0, 0, 0, 0.0 };
+  loaded = true;
+  data = { 0, 0, 0, 0, 0.0 };
 
-  this->saveStats();
-  eeprom_write_byte((uint8_t *) this->address, 0x16);
+  saveStats();
+  persistentStore.access_start();
+  persistentStore.write_data(address, (uint8_t)0x16);
+  persistentStore.access_finish();
 }
 
 void PrintCounter::loadStats() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("loadStats"));
+    debug(PSTR("loadStats"));
   #endif
 
-  // Checks if the EEPROM block is initialized
-  if (eeprom_read_byte((uint8_t *) this->address) != 0x16) this->initStats();
-  else eeprom_read_block(&this->data,
-    (void *)(this->address + sizeof(uint8_t)), sizeof(printStatistics));
-
-  this->loaded = true;
+  // Check if the EEPROM block is initialized
+  uint8_t value = 0;
+  persistentStore.access_start();
+  persistentStore.read_data(address, &value, sizeof(uint8_t));
+  if (value != 0x16)
+    initStats();
+  else
+    persistentStore.read_data(address + sizeof(uint8_t), (uint8_t*)&data, sizeof(printStatistics));
+  persistentStore.access_finish();
+  loaded = true;
 }
 
 void PrintCounter::saveStats() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("saveStats"));
+    debug(PSTR("saveStats"));
   #endif
 
   // Refuses to save data if object is not loaded
-  if (!this->isLoaded()) return;
+  if (!isLoaded()) return;
 
   // Saves the struct to EEPROM
-  eeprom_update_block(&this->data,
-    (void *)(this->address + sizeof(uint8_t)), sizeof(printStatistics));
+  persistentStore.access_start();
+  persistentStore.write_data(address + sizeof(uint8_t), (uint8_t*)&data, sizeof(printStatistics));
+  persistentStore.access_finish();
 }
 
 void PrintCounter::showStats() {
@@ -103,19 +114,19 @@ void PrintCounter::showStats() {
   SERIAL_PROTOCOLPGM(MSG_STATS);
 
   SERIAL_ECHOPGM("Prints: ");
-  SERIAL_ECHO(this->data.totalPrints);
+  SERIAL_ECHO(data.totalPrints);
 
   SERIAL_ECHOPGM(", Finished: ");
-  SERIAL_ECHO(this->data.finishedPrints);
+  SERIAL_ECHO(data.finishedPrints);
 
   SERIAL_ECHOPGM(", Failed: "); // Note: Removes 1 from failures with an active counter
-  SERIAL_ECHO(this->data.totalPrints - this->data.finishedPrints
-    - ((this->isRunning() || this->isPaused()) ? 1 : 0));
+  SERIAL_ECHO(data.totalPrints - data.finishedPrints
+    - ((isRunning() || isPaused()) ? 1 : 0));
 
   SERIAL_EOL();
   SERIAL_PROTOCOLPGM(MSG_STATS);
 
-  duration_t elapsed = this->data.printTime;
+  duration_t elapsed = data.printTime;
   elapsed.toString(buffer);
 
   SERIAL_ECHOPGM("Total time: ");
@@ -123,11 +134,11 @@ void PrintCounter::showStats() {
 
   #if ENABLED(DEBUG_PRINTCOUNTER)
     SERIAL_ECHOPGM(" (");
-    SERIAL_ECHO(this->data.printTime);
+    SERIAL_ECHO(data.printTime);
     SERIAL_CHAR(')');
   #endif
 
-  elapsed = this->data.longestPrint;
+  elapsed = data.longestPrint;
   elapsed.toString(buffer);
 
   SERIAL_ECHOPGM(", Longest job: ");
@@ -135,7 +146,7 @@ void PrintCounter::showStats() {
 
   #if ENABLED(DEBUG_PRINTCOUNTER)
     SERIAL_ECHOPGM(" (");
-    SERIAL_ECHO(this->data.longestPrint);
+    SERIAL_ECHO(data.longestPrint);
     SERIAL_CHAR(')');
   #endif
 
@@ -143,52 +154,45 @@ void PrintCounter::showStats() {
   SERIAL_PROTOCOLPGM(MSG_STATS);
 
   SERIAL_ECHOPGM("Filament used: ");
-  SERIAL_ECHO(this->data.filamentUsed / 1000);
-  SERIAL_ECHOPGM("m");
+  SERIAL_ECHO(data.filamentUsed / 1000);
+  SERIAL_CHAR('m');
 
   SERIAL_EOL();
 }
 
 void PrintCounter::tick() {
-  if (!this->isRunning()) return;
-
-  static uint32_t update_last = millis(),
-                  eeprom_last = millis();
+  if (!isRunning()) return;
 
   millis_t now = millis();
 
-  // Trying to get the amount of calculations down to the bare min
-  const static uint16_t i = this->updateInterval * 1000;
-
-  if (now - update_last >= i) {
+  static uint32_t update_next; // = 0
+  if (ELAPSED(now, update_next)) {
     #if ENABLED(DEBUG_PRINTCOUNTER)
-      PrintCounter::debug(PSTR("tick"));
+      debug(PSTR("tick"));
     #endif
-
-    this->data.printTime += this->deltaDuration();
-    update_last = now;
+    data.printTime += deltaDuration();
+    update_next = now + updateInterval * 1000;
   }
 
-  // Trying to get the amount of calculations down to the bare min
-  const static millis_t j = this->saveInterval * 1000;
-  if (now - eeprom_last >= j) {
-    eeprom_last = now;
-    this->saveStats();
+  static uint32_t eeprom_next; // = 0
+  if (ELAPSED(now, eeprom_next)) {
+    eeprom_next = now + saveInterval * 1000;
+    saveStats();
   }
 }
 
 // @Override
 bool PrintCounter::start() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("start"));
+    debug(PSTR("start"));
   #endif
 
-  bool paused = this->isPaused();
+  bool paused = isPaused();
 
   if (super::start()) {
     if (!paused) {
-      this->data.totalPrints++;
-      this->lastDuration = 0;
+      data.totalPrints++;
+      lastDuration = 0;
     }
     return true;
   }
@@ -199,17 +203,17 @@ bool PrintCounter::start() {
 // @Override
 bool PrintCounter::stop() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("stop"));
+    debug(PSTR("stop"));
   #endif
 
   if (super::stop()) {
-    this->data.finishedPrints++;
-    this->data.printTime += this->deltaDuration();
+    data.finishedPrints++;
+    data.printTime += deltaDuration();
 
-    if (this->duration() > this->data.longestPrint)
-      this->data.longestPrint = this->duration();
+    if (duration() > data.longestPrint)
+      data.longestPrint = duration();
 
-    this->saveStats();
+    saveStats();
     return true;
   }
   else return false;
@@ -218,11 +222,11 @@ bool PrintCounter::stop() {
 // @Override
 void PrintCounter::reset() {
   #if ENABLED(DEBUG_PRINTCOUNTER)
-    PrintCounter::debug(PSTR("stop"));
+    debug(PSTR("stop"));
   #endif
 
   super::reset();
-  this->lastDuration = 0;
+  lastDuration = 0;
 }
 
 #if ENABLED(DEBUG_PRINTCOUNTER)
@@ -235,13 +239,5 @@ void PrintCounter::reset() {
     }
   }
 #endif
-
-
-PrintCounter print_job_timer = PrintCounter();
-
-#else
-
-#include "../libs/stopwatch.h"
-Stopwatch print_job_timer = Stopwatch();
 
 #endif // PRINTCOUNTER

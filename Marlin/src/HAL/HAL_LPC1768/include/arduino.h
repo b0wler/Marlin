@@ -26,39 +26,39 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "../pinmapping.h"
+#include <pinmapping.h>
 
-#define LOW          0x00
 #define HIGH         0x01
+#define LOW          0x00
+
+#define INPUT          0x00
+#define OUTPUT         0x01
+#define INPUT_PULLUP   0x02
+#define INPUT_PULLDOWN 0x03
+
+#define LSBFIRST     0
+#define MSBFIRST     1
+
 #define CHANGE       0x02
 #define FALLING      0x03
 #define RISING       0x04
-
-#define INPUT        0x00
-#define OUTPUT       0x01
-#define INPUT_PULLUP 0x02
-
-#define E2END 0xFFF // EEPROM end address
 
 typedef uint8_t byte;
 #define PROGMEM
 #define PSTR(v) (v)
 #define PGM_P const char *
 
+// Used for libraries, preprocessor, and constants
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 #define abs(x) ((x)>0?(x):-(x))
+
 #ifndef isnan
   #define isnan std::isnan
 #endif
 #ifndef isinf
   #define isinf std::isinf
 #endif
-
-//not constexpr until c++14
-//#define max(v1, v2) std::max((int)v1,(int)v2)
-//#define min(v1, v2) std::min((int)v1,(int)v2)
-//#define abs(v) std::abs(v)
 
 #define sq(v) ((v) * (v))
 #define square(v) sq(v)
@@ -67,8 +67,8 @@ typedef uint8_t byte;
 //Interrupts
 void cli(void); // Disable
 void sei(void); // Enable
-void attachInterrupt(uint32_t pin, void (*callback)(void), uint32_t mode);
-void detachInterrupt(uint32_t pin);
+void attachInterrupt(const pin_t pin, void (*callback)(void), uint32_t mode);
+void detachInterrupt(const pin_t pin);
 extern "C" void GpioEnableInt(uint32_t port, uint32_t pin, uint32_t mode);
 extern "C" void GpioDisableInt(uint32_t port, uint32_t pin);
 
@@ -90,6 +90,8 @@ extern "C" void GpioDisableInt(uint32_t port, uint32_t pin);
 #define vsnprintf_P vsnprintf
 #define strcpy_P strcpy
 #define snprintf_P snprintf
+#define strlen_P strlen
+#define strchr_P strchr
 
 // Time functions
 extern "C" {
@@ -100,15 +102,15 @@ void delayMicroseconds(unsigned long);
 uint32_t millis();
 
 //IO functions
-void pinMode(pin_t, uint8_t);
+void pinMode(const pin_t, const uint8_t);
 void digitalWrite(pin_t, uint8_t);
 bool digitalRead(pin_t);
 void analogWrite(pin_t, int);
 uint16_t analogRead(pin_t);
 
 // EEPROM
-void eeprom_write_byte(unsigned char *pos, unsigned char value);
-unsigned char eeprom_read_byte(unsigned char *pos);
+void eeprom_write_byte(uint8_t *pos, unsigned char value);
+uint8_t eeprom_read_byte(uint8_t *pos);
 void eeprom_read_block (void *__dst, const void *__src, size_t __n);
 void eeprom_update_block (const void *__src, void *__dst, size_t __n);
 

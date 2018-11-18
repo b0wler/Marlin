@@ -24,7 +24,7 @@
  * Endstop Interrupts
  *
  * Without endstop interrupts the endstop pins must be polled continually in
- * the stepper-ISR via endstops.update(), most of the time finding no change.
+ * the temperature-ISR via endstops.update(), most of the time finding no change.
  * With this feature endstops.update() is called only when we know that at
  * least one endstop has changed state, saving valuable CPU cycles.
  *
@@ -34,48 +34,49 @@
  * (Located in Marlin/buildroot/share/pin_interrupt_test/pin_interrupt_test.ino)
  */
 
- #ifndef _ENDSTOP_INTERRUPTS_H_
- #define _ENDSTOP_INTERRUPTS_H_
+#ifndef _ENDSTOP_INTERRUPTS_H_
+#define _ENDSTOP_INTERRUPTS_H_
+
+#include "../../module/endstops.h"
+
+// One ISR for all EXT-Interrupts
+void endstop_ISR(void) { endstops.update(); }
 
 /**
- *  Endstop interrupts for Due based targets.
- *  On Due, all pins support external interrupt capability.
+ * Endstop interrupts for Due based targets.
+ * On Due, all pins support external interrupt capability.
  */
-
 void setup_endstop_interrupts( void ) {
-
   #if HAS_X_MAX
     attachInterrupt(digitalPinToInterrupt(X_MAX_PIN), endstop_ISR, CHANGE); // assign it
   #endif
-
   #if HAS_X_MIN
     attachInterrupt(digitalPinToInterrupt(X_MIN_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Y_MAX
     attachInterrupt(digitalPinToInterrupt(Y_MAX_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Y_MIN
     attachInterrupt(digitalPinToInterrupt(Y_MIN_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Z_MAX
     attachInterrupt(digitalPinToInterrupt(Z_MAX_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Z_MIN
      attachInterrupt(digitalPinToInterrupt(Z_MIN_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Z2_MAX
     attachInterrupt(digitalPinToInterrupt(Z2_MAX_PIN), endstop_ISR, CHANGE);
   #endif
-
   #if HAS_Z2_MIN
     attachInterrupt(digitalPinToInterrupt(Z2_MIN_PIN), endstop_ISR, CHANGE);
   #endif
-
+  #if HAS_Z3_MAX
+    attachInterrupt(digitalPinToInterrupt(Z3_MAX_PIN), endstop_ISR, CHANGE);
+  #endif
+  #if HAS_Z3_MIN
+    attachInterrupt(digitalPinToInterrupt(Z3_MIN_PIN), endstop_ISR, CHANGE);
+  #endif
   #if HAS_Z_MIN_PROBE_PIN
     attachInterrupt(digitalPinToInterrupt(Z_MIN_PROBE_PIN), endstop_ISR, CHANGE);
   #endif

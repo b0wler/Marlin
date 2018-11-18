@@ -29,13 +29,13 @@
 #include "../../pins/pinsDebug.h"
 #include "../../module/endstops.h"
 
-#if HAS_Z_SERVO_ENDSTOP
+#if HAS_Z_SERVO_PROBE
   #include "../../module/probe.h"
   #include "../../module/servo.h"
 #endif
 
 inline void toggle_pins() {
-  const bool I_flag = parser.boolval('I');
+  const bool ignore_protection = parser.boolval('I');
   const int repeat = parser.intval('R', 1),
             start = PARSED_PIN_INDEX('S', 0),
             end = PARSED_PIN_INDEX('E', NUM_DIGITAL_PINS - 1),
@@ -43,14 +43,14 @@ inline void toggle_pins() {
 
   for (uint8_t i = start; i <= end; i++) {
     pin_t pin = GET_PIN_MAP_PIN(i);
-    //report_pin_state_extended(pin, I_flag, false);
+    //report_pin_state_extended(pin, ignore_protection, false);
     if (!VALID_PIN(pin)) continue;
-    if (!I_flag && pin_is_protected(pin)) {
-      report_pin_state_extended(pin, I_flag, true, "Untouched ");
+    if (!ignore_protection && pin_is_protected(pin)) {
+      report_pin_state_extended(pin, ignore_protection, true, "Untouched ");
       SERIAL_EOL();
     }
     else {
-      report_pin_state_extended(pin, I_flag, true, "Pulsing   ");
+      report_pin_state_extended(pin, ignore_protection, true, "Pulsing   ");
       #if AVR_AT90USB1286_FAMILY // Teensy IDEs don't know about these pins so must use FASTIO
         if (pin == TEENSY_E2) {
           SET_OUTPUT(TEENSY_E2);
@@ -92,19 +92,19 @@ inline void servo_probe_test() {
     SERIAL_ERROR_START();
     SERIAL_ERRORLNPGM("SERVO not setup");
 
-  #elif !HAS_Z_SERVO_ENDSTOP
+  #elif !HAS_Z_SERVO_PROBE
 
     SERIAL_ERROR_START();
-    SERIAL_ERRORLNPGM("Z_ENDSTOP_SERVO_NR not setup");
+    SERIAL_ERRORLNPGM("Z_PROBE_SERVO_NR not setup");
 
-  #else // HAS_Z_SERVO_ENDSTOP
+  #else // HAS_Z_SERVO_PROBE
 
-    const uint8_t probe_index = parser.byteval('P', Z_ENDSTOP_SERVO_NR);
+    const uint8_t probe_index = parser.byteval('P', Z_PROBE_SERVO_NR);
 
     SERIAL_PROTOCOLLNPGM("Servo probe test");
     SERIAL_PROTOCOLLNPAIR(".  using index:  ", probe_index);
-    SERIAL_PROTOCOLLNPAIR(".  deploy angle: ", z_servo_angle[0]);
-    SERIAL_PROTOCOLLNPAIR(".  stow angle:   ", z_servo_angle[1]);
+    SERIAL_PROTOCOLLNPAIR(".  deploy angle: ", servo_angles[probe_index][0]);
+    SERIAL_PROTOCOLLNPAIR(".  stow angle:   ", servo_angles[probe_index][1]);
 
     bool probe_inverting;
 
@@ -146,16 +146,14 @@ inline void servo_probe_test() {
     uint8_t i = 0;
     bool deploy_state, stow_state;
     do {
-      MOVE_SERVO(probe_index, z_servo_angle[0]); //deploy
+      MOVE_SERVO(probe_index, servo_angles[Z_PROBE_SERVO_NR][0]); // Deploy
       safe_delay(500);
       deploy_state = READ(PROBE_TEST_PIN);
-      MOVE_SERVO(probe_index, z_servo_angle[1]); //stow
+      MOVE_SERVO(probe_index, servo_angles[Z_PROBE_SERVO_NR][1]); // Stow
       safe_delay(500);
       stow_state = READ(PROBE_TEST_PIN);
     } while (++i < 4);
     if (probe_inverting != deploy_state) SERIAL_PROTOCOLLNPGM("WARNING - INVERTING setting probably backwards");
-
-    gcode.refresh_cmd_timeout();
 
     if (deploy_state != stow_state) {
       SERIAL_PROTOCOLLNPGM("BLTouch clone detected");
@@ -172,7 +170,7 @@ inline void servo_probe_test() {
       #endif
     }
     else {                                           // measure active signal length
-      MOVE_SERVO(probe_index, z_servo_angle[0]);     // deploy
+      MOVE_SERVO(probe_index, servo_angles[Z_PROBE_SERVO_NR][0]); // Deploy
       safe_delay(500);
       SERIAL_PROTOCOLLNPGM("please trigger probe");
       uint16_t probe_counter = 0;
@@ -182,8 +180,7 @@ inline void servo_probe_test() {
 
         safe_delay(2);
 
-        if (0 == j % (500 * 1)) // keep cmd_timeout happy
-          gcode.refresh_cmd_timeout();
+        if (0 == j % (500 * 1)) gcode.reset_stepper_timeout(); // Keep steppers powered
 
         if (deploy_state != READ(PROBE_TEST_PIN)) { // probe triggered
 
@@ -197,7 +194,7 @@ inline void servo_probe_test() {
           else
             SERIAL_PROTOCOLLNPGM("noise detected - please re-run test"); // less than 2mS pulse
 
-          MOVE_SERVO(probe_index, z_servo_angle[1]); //stow
+          MOVE_SERVO(probe_index, servo_angles[Z_PROBE_SERVO_NR][1]); // Stow
 
         }  // pulse detected
 
@@ -270,7 +267,7 @@ void GcodeSuite::M43() {
   // Watch until click, M108, or reset
   if (parser.boolval('W')) {
     SERIAL_PROTOCOLLNPGM("Watching pins");
-    
+
     #ifdef ARDUINO_ARCH_SAM
       NOLESS(first_pin, 2);  // don't hijack the UART pins
     #endif
@@ -278,7 +275,7 @@ void GcodeSuite::M43() {
     for (uint8_t i = first_pin; i <= last_pin; i++) {
       pin_t pin = GET_PIN_MAP_PIN(i);
       if (!VALID_PIN(pin)) continue;
-      if (pin_is_protected(pin) && !ignore_protection) continue;
+      if (!ignore_protection && pin_is_protected(pin)) continue;
       pinMode(pin, INPUT_PULLUP);
       delay(1);
       /*
@@ -298,7 +295,7 @@ void GcodeSuite::M43() {
       for (uint8_t i = first_pin; i <= last_pin; i++) {
         pin_t pin = GET_PIN_MAP_PIN(i);
         if (!VALID_PIN(pin)) continue;
-        if (pin_is_protected(pin) && !ignore_protection) continue;
+        if (!ignore_protection && pin_is_protected(pin)) continue;
         const byte val =
           /*
             IS_ANALOG(pin)

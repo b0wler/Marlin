@@ -19,11 +19,10 @@ bool fastDigitalRead(uint8_t pin) {
  */
 static inline __attribute__((always_inline))
 void fastDigitalWrite(uint8_t pin, bool value) {
-  if (value) {
+  if (value)
     *portSetRegister(pin) = 1;
-  } else {
+  else
     *portClearRegister(pin) = 1;
-  }
 }
 #else  // CORE_TEENSY
 //------------------------------------------------------------------------------
@@ -32,7 +31,7 @@ void fastDigitalWrite(uint8_t pin, bool value) {
  * @return value read
  */
 static inline __attribute__((always_inline))
-bool fastDigitalRead(uint8_t pin){
+bool fastDigitalRead(uint8_t pin) {
   return g_APinDescription[pin].pPort->PIO_PDSR & g_APinDescription[pin].ulPin;
 }
 //------------------------------------------------------------------------------
@@ -41,18 +40,17 @@ bool fastDigitalRead(uint8_t pin){
  * @param[in] level value to write
  */
 static inline __attribute__((always_inline))
-void fastDigitalWrite(uint8_t pin, bool value){
-  if(value) {
+void fastDigitalWrite(uint8_t pin, bool value) {
+  if (value)
     g_APinDescription[pin].pPort->PIO_SODR = g_APinDescription[pin].ulPin;
-  } else {
+  else
     g_APinDescription[pin].pPort->PIO_CODR = g_APinDescription[pin].ulPin;
-  }
 }
 #endif  // CORE_TEENSY
 //------------------------------------------------------------------------------
 inline void fastDigitalToggle(uint8_t pin) {
- fastDigitalWrite(pin, !fastDigitalRead(pin));
- }
+  fastDigitalWrite(pin, !fastDigitalRead(pin));
+}
 //------------------------------------------------------------------------------
 inline void fastPinMode(uint8_t pin, bool mode) {pinMode(pin, mode);}
 #else  // __arm__
@@ -195,7 +193,7 @@ static const pin_map_t pinMap[] = {
 || defined(__AVR_ATmega324__)\
 || defined(__AVR_ATmega16__)
 
-#if defined(VARIANT_MIGHTY)
+#ifdef VARIANT_MIGHTY
 // Mighty Layout
 static const pin_map_t pinMap[] = {
   {&DDRB, &PINB, &PORTB, 0},  // B0  0
@@ -639,7 +637,7 @@ class DigitalPin {
 
 //------------------------------------------------------------------------------
 /** Nop for timing. */
-#define nop asm volatile ("nop\n\t")
+#define nop __asm__ volatile ("nop")
 //------------------------------------------------------------------------------
 /** Pin Mode for MISO is input.*/
 const bool MISO_MODE  = false;

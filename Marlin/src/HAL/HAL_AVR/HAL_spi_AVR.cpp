@@ -1,4 +1,4 @@
-/*
+/**
  * Marlin 3D Printer Firmware
  * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
@@ -95,8 +95,7 @@ void spiBegin (void) {
     SPSR = spiRate & 1 || spiRate == 6 ? 0 : _BV(SPI2X);
   }
 
- 
-    //------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------
   /** SPI receive a byte */
   uint8_t spiRec(void) {
     SPDR = 0xFF;
@@ -157,28 +156,21 @@ void spiBegin (void) {
     // is 2 ^^ (clock_div + 1). If nothing is slow enough, we'll use the
     // slowest (128 == 2 ^^ 7, so clock_div = 6).
     uint8_t clockDiv;
-    
+
     // When the clock is known at compiletime, use this if-then-else
     // cascade, which the compiler knows how to completely optimize
     // away. When clock is not known, use a loop instead, which generates
     // shorter code.
     if (__builtin_constant_p(spiClock)) {
-      if (spiClock >= F_CPU / 2) {
-        clockDiv = 0;
-      } else if (spiClock >= F_CPU / 4) {
-        clockDiv = 1;
-      } else if (spiClock >= F_CPU / 8) {
-        clockDiv = 2;
-      } else if (spiClock >= F_CPU / 16) {
-        clockDiv = 3;
-      } else if (spiClock >= F_CPU / 32) {
-        clockDiv = 4;
-      } else if (spiClock >= F_CPU / 64) {
-        clockDiv = 5;
-      } else {
-        clockDiv = 6;
-      }
-    } else {
+      if (spiClock >= F_CPU / 2)       clockDiv = 0;
+      else if (spiClock >= F_CPU / 4)  clockDiv = 1;
+      else if (spiClock >= F_CPU / 8)  clockDiv = 2;
+      else if (spiClock >= F_CPU / 16) clockDiv = 3;
+      else if (spiClock >= F_CPU / 32) clockDiv = 4;
+      else if (spiClock >= F_CPU / 64) clockDiv = 5;
+      else                             clockDiv = 6;
+    }
+    else {
       uint32_t clockSetting = F_CPU / 2;
       clockDiv = 0;
       while (clockDiv < 6 && spiClock < clockSetting) {
@@ -188,18 +180,17 @@ void spiBegin (void) {
     }
 
     // Compensate for the duplicate fosc/64
-    if (clockDiv == 6)
-      clockDiv = 7;
+    if (clockDiv == 6) clockDiv = 7;
 
     // Invert the SPI2X bit
     clockDiv ^= 0x1;
 
     SPCR = _BV(SPE) | _BV(MSTR) | ((bitOrder == SPI_LSBFIRST) ? _BV(DORD) : 0) |
       (dataMode << CPHA) | ((clockDiv >> 1) << SPR0);
-    SPSR = clockDiv | 0x01;          
+    SPSR = clockDiv | 0x01;
   }
 
-  
+
        //------------------------------------------------------------------------------
 #else  // SOFTWARE_SPI
        //------------------------------------------------------------------------------
@@ -216,13 +207,13 @@ void spiBegin (void) {
   void spiBeginTransaction(uint32_t spiClock, uint8_t bitOrder, uint8_t dataMode) {
     // nothing to do
     UNUSED(spiBeginTransaction);
-  }    
+  }
 
   //------------------------------------------------------------------------------
   /** Soft SPI receive byte */
   uint8_t spiRec() {
     uint8_t data = 0;
-    // no interrupts during byte receive - about 8 us
+    // no interrupts during byte receive - about 8µs
     cli();
     // output pin high - like sending 0xFF
     WRITE(MOSI_PIN, HIGH);
@@ -253,7 +244,7 @@ void spiBegin (void) {
   //------------------------------------------------------------------------------
   /** Soft SPI send byte */
   void spiSend(uint8_t data) {
-    // no interrupts during byte send - about 8 us
+    // no interrupts during byte send - about 8µs
     cli();
     for (uint8_t i = 0; i < 8; i++) {
       WRITE(SCK_PIN, LOW);
@@ -280,7 +271,7 @@ void spiBegin (void) {
     spiSend(token);
     for (uint16_t i = 0; i < 512; i++)
       spiSend(buf[i]);
-  } 
+  }
 #endif  // SOFTWARE_SPI
 
 

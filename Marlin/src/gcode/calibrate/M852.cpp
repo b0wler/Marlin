@@ -87,13 +87,15 @@ void GcodeSuite::M852() {
   // When skew is changed the current position changes
   if (setval) {
     set_current_from_steppers_for_axis(ALL_AXES);
-    SYNC_PLAN_POSITION_KINEMATIC();
+    sync_plan_position();
     report_current_position();
   }
 
   if (!ijk) {
     SERIAL_ECHO_START();
-    SERIAL_ECHOPAIR(MSG_SKEW_FACTOR " XY: ", planner.xy_skew_factor);
+    SERIAL_ECHOPGM(MSG_SKEW_FACTOR " XY: ");
+    SERIAL_ECHO_F(planner.xy_skew_factor, 6);
+    SERIAL_EOL();
     #if ENABLED(SKEW_CORRECTION_FOR_Z)
       SERIAL_ECHOPAIR(" XZ: ", planner.xz_skew_factor);
       SERIAL_ECHOLNPAIR(" YZ: ", planner.yz_skew_factor);

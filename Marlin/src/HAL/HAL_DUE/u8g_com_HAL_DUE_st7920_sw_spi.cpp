@@ -57,7 +57,7 @@
 
 #include "../../inc/MarlinConfigPre.h"
 
-#if ENABLED(DOGLCD)
+#if HAS_GRAPHICAL_LCD
 
 #include <U8glib.h>
 #include <Arduino.h>
@@ -133,7 +133,7 @@ uint8_t u8g_com_HAL_DUE_ST7920_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_va
       SCK_pPio->PIO_CODR = SCK_dwMask;   //SCK low - needed at power up but not after reset
       MOSI_pPio->PIO_CODR = MOSI_dwMask; //MOSI low - needed at power up but not after reset
 
-      u8g_Delay(10);
+      u8g_Delay(5);
 
       u8g->pin_list[U8G_PI_A0_STATE] = 0;       /* inital RS state: command mode */
       break;
@@ -180,6 +180,6 @@ uint8_t u8g_com_HAL_DUE_ST7920_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_va
   return 1;
 }
 
-#endif // DOGLCD
+#endif // HAS_GRAPHICAL_LCD
 
 #endif // ARDUINO_ARCH_SAM

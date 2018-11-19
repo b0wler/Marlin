@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * Korean
@@ -27,8 +28,6 @@
  * See also http://marlinfw.org/docs/development/lcd_language.html
  *
  */
-#ifndef LANGUAGE_KO_KR_H
-#define LANGUAGE_KO_KR_H
 
 #define CHARSIZE 1
 
@@ -58,13 +57,13 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Set home offsets")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Offsets applied")
 #define MSG_SET_ORIGIN                      _UxGT("Set origin")
-#define MSG_PREHEAT_1                       _UxGT("예열하기 - PLA")
+#define MSG_PREHEAT_1                       _UxGT("예열하기 - " PREHEAT_1_LABEL)
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" 모두")
 #define MSG_PREHEAT_1_END                   MSG_PREHEAT_1 _UxGT(" 노즐만")
 #define MSG_PREHEAT_1_BEDONLY               MSG_PREHEAT_1 _UxGT(" 베드만")
 #define MSG_PREHEAT_1_SETTINGS              MSG_PREHEAT_1 _UxGT(" conf")
-#define MSG_PREHEAT_2                       _UxGT("예열하기 - ABS")
+#define MSG_PREHEAT_2                       _UxGT("예열하기 - " PREHEAT_2_LABEL)
 #define MSG_PREHEAT_2_N                     MSG_PREHEAT_2 _UxGT(" ")
 #define MSG_PREHEAT_2_ALL                   MSG_PREHEAT_2 _UxGT(" 모두")
 #define MSG_PREHEAT_2_END                   MSG_PREHEAT_2 _UxGT(" 노즐만")
@@ -103,24 +102,24 @@
 #define MSG_UBL_MOVING_TO_NEXT              _UxGT("Moving to next")
 #define MSG_UBL_ACTIVATE_MESH               _UxGT("Activate UBL")
 #define MSG_UBL_DEACTIVATE_MESH             _UxGT("Deactivate UBL")
-#define MSG_UBL_SET_BED_TEMP                _UxGT("Bed Temp")
-#define MSG_UBL_CUSTOM_BED_TEMP             MSG_UBL_SET_BED_TEMP
-#define MSG_UBL_SET_HOTEND_TEMP             _UxGT("Hotend Temp")
-#define MSG_UBL_CUSTOM_HOTEND_TEMP          MSG_UBL_SET_HOTEND_TEMP
+#define MSG_UBL_SET_TEMP_BED                _UxGT("Bed Temp")
+#define MSG_UBL_BED_TEMP_CUSTOM             MSG_UBL_SET_TEMP_BED
+#define MSG_UBL_SET_TEMP_HOTEND             _UxGT("Hotend Temp")
+#define MSG_UBL_HOTEND_TEMP_CUSTOM          MSG_UBL_SET_TEMP_HOTEND
 #define MSG_UBL_MESH_EDIT                   _UxGT("Mesh Edit")
 #define MSG_UBL_EDIT_CUSTOM_MESH            _UxGT("Edit Custom Mesh")
 #define MSG_UBL_FINE_TUNE_MESH              _UxGT("Fine Tuning Mesh")
 #define MSG_UBL_DONE_EDITING_MESH           _UxGT("Done Editing Mesh")
 #define MSG_UBL_BUILD_CUSTOM_MESH           _UxGT("Build Custom Mesh")
 #define MSG_UBL_BUILD_MESH_MENU             _UxGT("Build Mesh")
-#define MSG_UBL_BUILD_PLA_MESH              _UxGT("Build PLA Mesh")
-#define MSG_UBL_BUILD_ABS_MESH              _UxGT("Build ABS Mesh")
+#define MSG_UBL_BUILD_MESH_M1               _UxGT("Build Mesh (" PREHEAT_1_LABEL ")")
+#define MSG_UBL_BUILD_MESH_M2               _UxGT("Build Mesh (" PREHEAT_2_LABEL ")")
 #define MSG_UBL_BUILD_COLD_MESH             _UxGT("Build Cold Mesh")
 #define MSG_UBL_MESH_HEIGHT_ADJUST          _UxGT("Adjust Mesh Height")
 #define MSG_UBL_MESH_HEIGHT_AMOUNT          _UxGT("Height Amount")
 #define MSG_UBL_VALIDATE_MESH_MENU          _UxGT("Validate Mesh")
-#define MSG_UBL_VALIDATE_PLA_MESH           _UxGT("Validate PLA Mesh")
-#define MSG_UBL_VALIDATE_ABS_MESH           _UxGT("Validate ABS Mesh")
+#define MSG_UBL_VALIDATE_MESH_M1            _UxGT("Validate " PREHEAT_1_LABEL " Mesh")
+#define MSG_UBL_VALIDATE_MESH_M2            _UxGT("Validate Mesh (" PREHEAT_2_LABEL ")")
 #define MSG_UBL_VALIDATE_CUSTOM_MESH        _UxGT("Validate Custom Mesh")
 #define MSG_UBL_CONTINUE_MESH               _UxGT("Continue Bed Mesh")
 #define MSG_UBL_MESH_LEVELING               _UxGT("Mesh Leveling")
@@ -134,7 +133,7 @@
 #define MSG_UBL_OUTPUT_MAP_CSV              _UxGT("Output for CSV")
 #define MSG_UBL_OUTPUT_MAP_BACKUP           _UxGT("Off Printer Backup")
 #define MSG_UBL_INFO_UBL                    _UxGT("Output UBL Info")
-#define MSG_UBL_EDIT_MESH_MENU              _UxGT("Edit Mesh")
+#define MSG_EDIT_MESH                       _UxGT("Edit Mesh")
 #define MSG_UBL_FILLIN_AMOUNT               _UxGT("Fill-in Amount")
 #define MSG_UBL_MANUAL_FILLIN               _UxGT("Manual Fill-in")
 #define MSG_UBL_SMART_FILLIN                _UxGT("Smart Fill-in")
@@ -195,8 +194,8 @@
 #define MSG_MAX                             _UxGT(" ") LCD_STR_THERMOMETER _UxGT(" Max")
 #define MSG_FACTOR                          _UxGT(" ") LCD_STR_THERMOMETER _UxGT(" Fact")
 #define MSG_AUTOTEMP                        _UxGT("Autotemp")
-#define MSG_ON                              _UxGT("On ")
-#define MSG_OFF                             _UxGT("Off")
+#define MSG_LCD_ON                          _UxGT("On")
+#define MSG_LCD_OFF                         _UxGT("Off")
 #define MSG_PID_P                           _UxGT("PID-P")
 #define MSG_PID_I                           _UxGT("PID-I")
 #define MSG_PID_D                           _UxGT("PID-D")
@@ -260,7 +259,7 @@
 #define MSG_PAUSE_PRINT                     _UxGT("일시정지")
 #define MSG_RESUME_PRINT                    _UxGT("재시작")
 #define MSG_STOP_PRINT                      _UxGT("출력중지")
-#define MSG_POWER_LOSS_RECOVERY             _UxGT("Power-Loss Recovery")
+#define MSG_OUTAGE_RECOVERY                 _UxGT("Outage Recovery")
 #define MSG_CARD_MENU                       _UxGT("SD 카드출력")
 #define MSG_NO_CARD                         _UxGT("SD 카드없음")
 #define MSG_DWELL                           _UxGT("슬립모드...")
@@ -274,7 +273,7 @@
 #define MSG_CONTROL_RETRACT                 _UxGT("Retract mm")
 #define MSG_CONTROL_RETRACT_SWAP            _UxGT("Swap Re.mm")
 #define MSG_CONTROL_RETRACTF                _UxGT("Retract  V")
-#define MSG_CONTROL_RETRACT_ZLIFT           _UxGT("Hop mm")
+#define MSG_CONTROL_RETRACT_ZHOP            _UxGT("Hop mm")
 #define MSG_CONTROL_RETRACT_RECOVER         _UxGT("UnRet mm")
 #define MSG_CONTROL_RETRACT_RECOVER_SWAP    _UxGT("S UnRet mm")
 #define MSG_CONTROL_RETRACT_RECOVERF        _UxGT("UnRet V")
@@ -285,7 +284,7 @@
 #define MSG_FILAMENTUNLOAD                  _UxGT("Unload filament")
 #define MSG_FILAMENTUNLOAD_ALL              _UxGT("Unload All")
 #define MSG_INIT_SDCARD                     _UxGT("Init. SD card")
-#define MSG_CNG_SDCARD                      _UxGT("Change SD card")
+#define MSG_CHANGE_SDCARD                   _UxGT("Change SD card")
 #define MSG_ZPROBE_OUT                      _UxGT("Z Probe past bed")
 #define MSG_SKEW_FACTOR                     _UxGT("Skew Factor")
 #define MSG_BLTOUCH                         _UxGT("BLTouch")
@@ -412,5 +411,3 @@
   #define MSG_FILAMENT_CHANGE_PURGE_1         _UxGT("Purging...")
   #define MSG_FILAMENT_CHANGE_RESUME_1        _UxGT("Resuming...")
 #endif // LCD_HEIGHT < 4
-
-#endif // LANGUAGE_KO_KR_H

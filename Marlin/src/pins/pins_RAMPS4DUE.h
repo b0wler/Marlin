@@ -61,17 +61,30 @@
 #undef TEMP_BED_PIN
 #define TEMP_BED_PIN       10   // Analog Input
 
+//
+// Heaters / Fans
+//
+
+#undef  HEATER_0_PIN
+#define HEATER_0_PIN       	RAMPS_D10_PIN
+
+#undef  HEATER_1_PIN
+#define HEATER_1_PIN       	RAMPS_D9_PIN
+
+#undef  HEATER_BED_PIN 
+#define HEATER_BED_PIN   	SERVO0_PIN
+
 #undef FAN_PIN
-#define FAN_PIN		       11
+#define FAN_PIN		        RAMPS_D8_PIN
 
 #undef FAN0_PIN
-#define FAN0_PIN		   6
+#define FAN0_PIN		   	RAMPS_D8_PIN
 
 #undef FAN1_PIN
-#define FAN1_PIN		   5
+#define FAN1_PIN		   	SERVO1_PIN
 
-//#undef FAN2_PIN
-//#define FAN2_PIN		   5
+#undef FAN2_PIN
+#define FAN2_PIN		   	SERVO2_PIN
 
 #undef KILL_PIN
 #define KILL_PIN		   25

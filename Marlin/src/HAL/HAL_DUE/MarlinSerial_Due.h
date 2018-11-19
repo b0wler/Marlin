@@ -42,10 +42,10 @@
 // is the index of the location from which to read.
 // 256 is the max limit due to uint8_t head and tail. Use only powers of 2. (...,16,32,64,128,256)
 #ifndef RX_BUFFER_SIZE
-  #define RX_BUFFER_SIZE 256
+  #define RX_BUFFER_SIZE 128
 #endif
 #ifndef TX_BUFFER_SIZE
-  #define TX_BUFFER_SIZE 256
+  #define TX_BUFFER_SIZE 32
 #endif
 
 //#if ENABLED(SERIAL_XON_XOFF) && RX_BUFFER_SIZE < 1024

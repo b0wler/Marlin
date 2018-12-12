@@ -83,8 +83,8 @@
 #undef FAN1_PIN
 #define FAN1_PIN		   	SERVO1_PIN
 
-#undef FAN2_PIN
-#define FAN2_PIN		   	SERVO2_PIN
+//#undef FAN2_PIN
+//#define FAN2_PIN		   	SERVO2_PIN
 
 #undef KILL_PIN
 #define KILL_PIN		   25

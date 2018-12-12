@@ -256,7 +256,7 @@
 // Offset of the extruders (uncomment if using more than one and relying on firmware to position when changing).
 // The offset has to be X=0, Y=0 for the extruder 0 hotend (default extruder).
 // For the other hotends it is their distance from the extruder 0 hotend.
-#define HOTEND_OFFSET_X {0.0, 18.00} // (mm) relative X-offset for each nozzle
+#define HOTEND_OFFSET_X {0.0, -18.00} // (mm) relative X-offset for each nozzle
 //#define HOTEND_OFFSET_Y {0.0, 5.00}  // (mm) relative Y-offset for each nozzle
 //#define HOTEND_OFFSET_Z {0.0, 0.00}  // (mm) relative Z-offset for each nozzle
 
@@ -841,7 +841,7 @@
 #define MIN_PROBE_EDGE 10
 
 // X and Y axis travel speed (mm/m) between probes
-#define XY_PROBE_SPEED 10000
+#define XY_PROBE_SPEED 6000
 
 // Feedrate (mm/m) for the first approach when double-probing (MULTIPLE_PROBING == 2)
 #define Z_PROBE_SPEED_FAST HOMING_FEEDRATE_Z
@@ -932,7 +932,7 @@
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
 #define INVERT_E0_DIR false
-#define INVERT_E1_DIR false
+#define INVERT_E1_DIR true
 #define INVERT_E2_DIR false
 #define INVERT_E3_DIR false
 #define INVERT_E4_DIR false
@@ -960,8 +960,8 @@
 #define Y_BED_SIZE 220.00
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
-#define X_MIN_POS -22.00
-#define Y_MIN_POS -10.00
+#define X_MIN_POS 0.00
+#define Y_MIN_POS 0.00
 #define Z_MIN_POS 0.00
 #define X_MAX_POS X_BED_SIZE
 #define Y_MAX_POS Y_BED_SIZE

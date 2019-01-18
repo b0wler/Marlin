@@ -85,6 +85,10 @@
   #include "../libs/buzzer.h"
 #endif
 
+#if HAS_TRINAMIC
+  #include "../feature/tmc_util.h"
+#endif
+
 #if HAS_ENCODER_ACTION
   volatile uint8_t MarlinUI::buttons;
   #if HAS_SLOW_BUTTONS
@@ -255,6 +259,10 @@ void MarlinUI::init() {
   #if HAS_ENCODER_ACTION
     encoderDiff = 0;
   #endif
+
+  #if HAS_TRINAMIC
+    init_tmc_section();
+  #endif
 }
 
 bool MarlinUI::get_blink() {
@@ -419,7 +427,8 @@ void MarlinUI::status_screen() {
     //
 
     #if DISABLED(PROGRESS_MSG_ONCE) || (PROGRESS_MSG_EXPIRE > 0)
-      millis_t ms = millis();
+      #define GOT_MS
+      const millis_t ms = millis();
     #endif
 
     // If the message will blink rather than expire...
@@ -464,30 +473,39 @@ void MarlinUI::status_screen() {
 
   #endif // HAS_LCD_MENU
 
-  #if ENABLED(ULTIPANEL_FEEDMULTIPLY) && HAS_ENCODER_ACTION
+  #if ENABLED(ULTIPANEL_FEEDMULTIPLY)
 
-    const int16_t new_frm = feedrate_percentage + (int32_t)encoderPosition;
+    const int16_t old_frm = feedrate_percentage;
+          int16_t new_frm = old_frm + (int32_t)encoderPosition;
+
     // Dead zone at 100% feedrate
-    if ((feedrate_percentage < 100 && new_frm > 100) || (feedrate_percentage > 100 && new_frm < 100)) {
-      feedrate_percentage = 100;
-      encoderPosition = 0;
+    if (old_frm == 100) {
+      if ((int32_t)encoderPosition > ENCODER_FEEDRATE_DEADZONE)
+        new_frm -= ENCODER_FEEDRATE_DEADZONE;
+      else if ((int32_t)encoderPosition < -(ENCODER_FEEDRATE_DEADZONE))
+        new_frm += ENCODER_FEEDRATE_DEADZONE;
+      else
+        new_frm = old_frm;
     }
-    else if (feedrate_percentage == 100) {
-      if ((int32_t)encoderPosition > ENCODER_FEEDRATE_DEADZONE) {
-        feedrate_percentage += (int32_t)encoderPosition - (ENCODER_FEEDRATE_DEADZONE);
-        encoderPosition = 0;
-      }
-      else if ((int32_t)encoderPosition < -(ENCODER_FEEDRATE_DEADZONE)) {
-        feedrate_percentage += (int32_t)encoderPosition + ENCODER_FEEDRATE_DEADZONE;
-        encoderPosition = 0;
-      }
-    }
-    else {
+    else if ((old_frm < 100 && new_frm > 100) || (old_frm > 100 && new_frm < 100))
+      new_frm = 100;
+
+    new_frm = constrain(new_frm, 10, 999);
+
+    if (old_frm != new_frm) {
       feedrate_percentage = new_frm;
       encoderPosition = 0;
+      #if ENABLED(BEEP_ON_FEEDRATE_CHANGE)
+        static millis_t next_beep;
+        #ifndef GOT_MS
+          const millis_t ms = millis();
+        #endif
+        if (ELAPSED(ms, next_beep)) {
+          BUZZ(FEEDRATE_CHANGE_BEEP_DURATION, FEEDRATE_CHANGE_BEEP_FREQUENCY);
+          next_beep = ms + 500UL;
+        }
+      #endif
     }
-
-    feedrate_percentage = constrain(feedrate_percentage, 10, 999);
 
   #endif // ULTIPANEL_FEEDMULTIPLY
 
@@ -699,7 +717,10 @@ void MarlinUI::update() {
       }
       else {
         card.release();
-        if (old_sd_status != 2) set_status_P(PSTR(MSG_SD_REMOVED));
+        if (old_sd_status != 2) {
+          set_status_P(PSTR(MSG_SD_REMOVED));
+          if (!on_status_screen()) return_to_status();
+        }
       }
 
       refresh();

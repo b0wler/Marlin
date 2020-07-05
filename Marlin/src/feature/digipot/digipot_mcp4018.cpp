@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,8 @@
 
 #include "../../inc/MarlinConfig.h"
 
-#if ENABLED(DIGIPOT_I2C) && ENABLED(DIGIPOT_MCP4018)
+#if BOTH(DIGIPOT_I2C, DIGIPOT_MCP4018)
 
-#include "../../core/enum.h"
 #include "Stream.h"
 #include "utility/twi.h"
 #include <SlowSoftI2CMaster.h>  //https://github.com/stawel/SlowSoftI2CMaster
@@ -87,17 +86,17 @@ static void i2c_send(const uint8_t channel, const byte v) {
 
 // This is for the MCP4018 I2C based digipot
 void digipot_i2c_set_current(const uint8_t channel, const float current) {
-  i2c_send(channel, current_to_wiper(MIN(MAX(current, 0), float(DIGIPOT_A4988_MAX_CURRENT))));
+  i2c_send(channel, current_to_wiper(_MIN(_MAX(current, 0), float(DIGIPOT_A4988_MAX_CURRENT))));
 }
 
 void digipot_i2c_init() {
   static const float digipot_motor_current[] PROGMEM = DIGIPOT_I2C_MOTOR_CURRENTS;
 
-  for (uint8_t i = 0; i < DIGIPOT_I2C_NUM_CHANNELS; i++)
+  LOOP_L_N(i, DIGIPOT_I2C_NUM_CHANNELS)
     pots[i].i2c_init();
 
   // setup initial currents as defined in Configuration_adv.h
-  for (uint8_t i = 0; i < COUNT(digipot_motor_current); i++)
+  LOOP_L_N(i, COUNT(digipot_motor_current))
     digipot_i2c_set_current(i, pgm_read_float(&digipot_motor_current[i]));
 }
 

@@ -46,11 +46,44 @@
 #define BOARD_INFO_NAME "RAMPS4DUE"
 #define IS_RAMPS4DUE
 
+#include "../ramps/pins_RAMPS.h"
+
 //
 // Temperature Sensors
 //
-#define TEMP_0_PIN          9   // Analog Input
-#define TEMP_1_PIN         -1   // Analog Input
-#define TEMP_BED_PIN       10   // Analog Input
+#undef TEMP_BED_PIN
+#define TEMP_BED_PIN       9   // Analog Input
 
-#include "../ramps/pins_RAMPS.h"
+#undef TEMP_0_PIN
+#define TEMP_0_PIN         10  // Analog Input
+
+#undef TEMP_1_PIN
+#define TEMP_1_PIN         11   // Analog Input
+
+//
+// Heaters / Fans
+//
+
+#undef  HEATER_0_PIN
+#define HEATER_0_PIN       	RAMPS_D10_PIN
+
+#undef  HEATER_1_PIN
+#define HEATER_1_PIN       	RAMPS_D9_PIN
+
+#undef  HEATER_BED_PIN 
+#define HEATER_BED_PIN   	SERVO0_PIN
+
+#undef FAN_PIN
+#define FAN_PIN		        RAMPS_D8_PIN
+
+#undef FAN0_PIN
+#define FAN0_PIN		   	RAMPS_D8_PIN
+
+#undef FAN1_PIN
+#define FAN1_PIN		   	SERVO1_PIN
+
+#undef FAN2_PIN
+#define FAN2_PIN		   	SERVO2_PIN
+
+#undef KILL_PIN
+#define KILL_PIN		   25
